@@ -79,9 +79,12 @@ namespace FFXIV_Vibe_Plugin
 
             experiment_networkCapture = new NetworkCapture();
 
-            new Thread(() => Service.App.MonitorPartyList(Service.PartyList)).Start();
-
             SetProfile(Service.Configuration.CurrentProfileName);
+
+            if (Service.PartyList != null)
+                new Thread(() => MonitorPartyList(Service.PartyList)).Start();
+            else
+                Logger.Error("PAS DE SERVICE");
 
             wasInit = true;
         }

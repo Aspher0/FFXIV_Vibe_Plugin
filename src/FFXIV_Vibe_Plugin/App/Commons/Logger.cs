@@ -31,63 +31,63 @@ public static class Logger
     {
         if (log_level > Logger.LogLevel.VERBOSE)
             return;
-        // PluginLog.LogVerbose(this.FormatMessage(Logger.LogLevel.VERBOSE, msg), Array.Empty<object>());
+        Service.PluginLog.Verbose(FormatMessage(Logger.LogLevel.VERBOSE, msg));
     }
 
     public static void Debug(string msg)
     {
         if (log_level > Logger.LogLevel.DEBUG)
             return;
-        // PluginLog.LogDebug(this.FormatMessage(Logger.LogLevel.DEBUG, msg), Array.Empty<object>());
+        Service.PluginLog.Debug(FormatMessage(Logger.LogLevel.DEBUG, msg));
     }
 
     public static void Log(string msg)
     {
         if (log_level > Logger.LogLevel.LOG)
             return;
-        // PluginLog.Log(this.FormatMessage(Logger.LogLevel.LOG, msg), Array.Empty<object>());
+        Service.PluginLog.Debug(FormatMessage(Logger.LogLevel.LOG, msg));
     }
 
     public static void Info(string msg)
     {
         if (log_level > Logger.LogLevel.INFO)
             return;
-        // PluginLog.Information(this.FormatMessage(Logger.LogLevel.INFO, msg), Array.Empty<object>());
+        Service.PluginLog.Information(FormatMessage(Logger.LogLevel.INFO, msg));
     }
 
     public static void Warn(string msg)
     {
         if (log_level > Logger.LogLevel.WARN)
             return;
-        // PluginLog.Warning(this.FormatMessage(Logger.LogLevel.WARN, msg), Array.Empty<object>());
+        Service.PluginLog.Warning(FormatMessage(Logger.LogLevel.WARN, msg));
     }
 
     public static void Error(string msg)
     {
         if (log_level > Logger.LogLevel.ERROR)
             return;
-        // PluginLog.Error(this.FormatMessage(Logger.LogLevel.ERROR, msg), Array.Empty<object>());
+        Service.PluginLog.Error(FormatMessage(Logger.LogLevel.ERROR, msg));
     }
 
     public static void Error(string msg, Exception e)
     {
         if (log_level > Logger.LogLevel.ERROR)
             return;
-        // PluginLog.Error(this.FormatMessage(Logger.LogLevel.ERROR, msg, e), Array.Empty<object>());
+        Service.PluginLog.Error(FormatMessage(Logger.LogLevel.ERROR, msg, e));
     }
 
     public static void Fatal(string msg)
     {
         if (log_level > Logger.LogLevel.FATAL)
             return;
-        // PluginLog.Fatal(this.FormatMessage(Logger.LogLevel.FATAL, msg), Array.Empty<object>());
+        Service.PluginLog.Fatal(FormatMessage(Logger.LogLevel.FATAL, msg));
     }
 
     public static void Fatal(string msg, Exception e)
     {
         if (log_level > Logger.LogLevel.FATAL)
             return;
-        // PluginLog.Fatal(this.FormatMessage(Logger.LogLevel.FATAL, msg, e), Array.Empty<object>());
+        Service.PluginLog.Fatal(FormatMessage(LogLevel.FATAL, msg, e));
     }
 
     private static string FormatMessage(Logger.LogLevel type, string msg) => $"{(name != "" ? name + " " : "")}{type} {prefix} {msg}";
