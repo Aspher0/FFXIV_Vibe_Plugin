@@ -1,11 +1,9 @@
-#nullable disable
-namespace FFXIV_Vibe_Plugin.Triggers
+namespace FFXIV_Vibe_Plugin.Triggers;
+
+public enum DIRECTION
 {
-    public enum DIRECTION
-    {
-        Any,
-        Outgoing,
-        Incoming,
-        Self,
-    }
+    Any,
+    Outgoing,
+    Incoming,
+    Self,
 }

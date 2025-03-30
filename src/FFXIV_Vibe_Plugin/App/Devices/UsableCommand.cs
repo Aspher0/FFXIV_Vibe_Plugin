@@ -1,12 +1,10 @@
-#nullable disable
-namespace FFXIV_Vibe_Plugin.Device
+namespace FFXIV_Vibe_Plugin.Device;
+
+public enum UsableCommand
 {
-    public enum UsableCommand
-    {
-        Vibrate,
-        Rotate,
-        Linear,
-        Oscillate,
-        Stop,
-    }
+    Vibrate,
+    Rotate,
+    Linear,
+    Oscillate,
+    Stop,
 }

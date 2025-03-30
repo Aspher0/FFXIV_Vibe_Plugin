@@ -1,15 +1,17 @@
 using System;
 using System.Threading;
 
-#nullable enable
+// Not used ?
+
 public static class Debounce
 {
     public static Action<T> Create<T>(Action<T> action, int milliseconds)
     {
-        CancellationTokenSource cancelToken = (CancellationTokenSource)null;
-        T lastArg = default(T);
+        CancellationTokenSource? cancelToken = null;
+        T? lastArg = default;
         object lockObj = new object();
-        return (Action<T>)(arg =>
+
+        return arg =>
         {
             lock (lockObj)
             {
@@ -18,45 +20,54 @@ public static class Debounce
                 cancelToken = new CancellationTokenSource();
             }
             CancellationToken token = cancelToken.Token;
-            ThreadPool.QueueUserWorkItem((WaitCallback)(_ =>
+            ThreadPool.QueueUserWorkItem(_ =>
             {
                 Thread.Sleep(milliseconds);
+
                 if (token.IsCancellationRequested)
                     return;
+
                 lock (lockObj)
                 {
                     if (token.IsCancellationRequested)
                         return;
+
                     action(lastArg);
                 }
-            }));
-        });
+            });
+        };
     }
 
     public static Action Create(Action action, int milliseconds)
     {
-        CancellationTokenSource cancelToken = (CancellationTokenSource)null;
+        CancellationTokenSource? cancelToken = null;
         object lockObj = new object();
-        return (Action)(() =>
+
+        return () =>
         {
             lock (lockObj)
             {
                 cancelToken?.Cancel();
                 cancelToken = new CancellationTokenSource();
             }
+
             CancellationToken token = cancelToken.Token;
-            ThreadPool.QueueUserWorkItem((WaitCallback)(_ =>
+
+            ThreadPool.QueueUserWorkItem(_ =>
             {
                 Thread.Sleep(milliseconds);
+
                 if (token.IsCancellationRequested)
                     return;
+
                 lock (lockObj)
                 {
                     if (token.IsCancellationRequested)
                         return;
+
                     action();
                 }
-            }));
-        });
+            });
+        };
     }
 }

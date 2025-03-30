@@ -33,48 +33,43 @@ namespace FFXIV_Vibe_Plugin
             this.AddBuiltinPattern(new Pattern("FF Victory Jingle 4.95sec", "20:150|0:150|70:150|0:150|0:500|60:150|0:150|40:150|0:150|0:500|30:150|0:150|80:150|0:150|0:500|100:150|0:150|20:150|0:150|0:500|30:150|0:150|40:150|0:150|0:500|90:150|0:150|80:150|0:150|0:500|20:150|0:150|10:150|0:150|0:500|90:150|0:150|80:150|0:150|0:0"));
         }
 
-        public List<Pattern> GetAllPatterns()
-        {
-            return this.BuiltinPatterns.Concat<Pattern>((IEnumerable<Pattern>)this.CustomPatterns).ToList<Pattern>();
-        }
+        public List<Pattern> GetAllPatterns() => BuiltinPatterns.Concat(CustomPatterns).ToList();
 
-        public List<Pattern> GetBuiltinPatterns() => this.BuiltinPatterns;
+        public List<Pattern> GetBuiltinPatterns() => BuiltinPatterns;
 
-        public List<Pattern> GetCustomPatterns()
-        {
-            List<Pattern> customPatterns = new List<Pattern>();
-            foreach (Pattern customPattern in this.CustomPatterns)
-                customPatterns.Add(customPattern);
-            return customPatterns;
-        }
+        public List<Pattern> GetCustomPatterns() => CustomPatterns;
 
         public void SetCustomPatterns(List<Pattern> customPatterns)
         {
-            this.CustomPatterns = customPatterns;
+            CustomPatterns = customPatterns;
         }
 
-        public Pattern GetPatternById(int index) => this.GetAllPatterns()[index];
+        public Pattern GetPatternById(int index) => GetAllPatterns()[index];
 
-        public void AddBuiltinPattern(Pattern pattern) => this.BuiltinPatterns.Add(pattern);
+        public void AddBuiltinPattern(Pattern pattern) => BuiltinPatterns.Add(pattern);
 
         public void AddCustomPattern(Pattern pattern)
         {
-            Pattern pattern1 = this.CustomPatterns.FirstOrDefault<Pattern>((Func<Pattern, bool>)(p => p.Name == pattern.Name));
+            Pattern? pattern1 = CustomPatterns.FirstOrDefault(p => p.Name == pattern.Name);
+
             if (pattern1 != null)
             {
                 pattern1.Name = pattern.Name;
                 pattern1.Value = pattern.Value;
             }
             else
-                this.CustomPatterns.Add(pattern);
+                CustomPatterns.Add(pattern);
         }
 
         public bool RemoveCustomPattern(Pattern pattern)
         {
-            int index = this.CustomPatterns.IndexOf(pattern);
+            int index = CustomPatterns.IndexOf(pattern);
+
             if (index <= -1)
                 return false;
-            this.CustomPatterns.RemoveAt(index);
+
+            CustomPatterns.RemoveAt(index);
+
             return true;
         }
     }

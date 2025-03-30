@@ -1,71 +1,65 @@
-using Dalamud.Game;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using System.IO;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
-using System;
 using FFXIV_Vibe_Plugin.App;
 
-#nullable enable
-namespace FFXIV_Vibe_Plugin
+namespace FFXIV_Vibe_Plugin;
+
+public sealed class Plugin : IDalamudPlugin
 {
-    public sealed class Plugin : IDalamudPlugin
+    [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
+
+    public string Name => "FFXIV Vibe Plugin";
+
+    public WindowSystem WindowSystem = new("SamplePlugin");
+
+    public static readonly string ShortName = "FVP";
+    public readonly string CommandName = "/fvp";
+
+    public Plugin()
     {
-        [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
+        PluginInterface.Create<Service>();
+        Service.Plugin = this;
+        Service.InitializeService();
 
-        public string Name => "FFXIV Vibe Plugin";
+        Service.App = PluginInterface.Create<Main>(CommandName, ShortName)!;
 
-        public WindowSystem WindowSystem = new("SamplePlugin");
+        WindowSystem.AddWindow(Service.App.PluginUi);
 
-        public static readonly string ShortName = "FVP";
-        public readonly string CommandName = "/fvp";
+        PluginInterface.UiBuilder.Draw += DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-        public Plugin()
+        Service.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            PluginInterface.Create<Service>();
-            Service.Plugin = this;
-            Service.InitializeService();
+            HelpMessage = "A vibe plugin for fun..."
+        });
+    }
 
-            Service.App = PluginInterface.Create<Main>(CommandName, ShortName)!;
+    public void Dispose()
+    {
+        WindowSystem.RemoveAllWindows();
+        Service.CommandManager.RemoveHandler(CommandName);
+        Service.App.Dispose();
+    }
 
-            WindowSystem.AddWindow(Service.App.PluginUi);
+    private void OnCommand(string command, string args)
+    {
+        Service.App.OnCommand(command, args);
+    }
 
-            PluginInterface.UiBuilder.Draw += DrawUI;
-            PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+    private void DrawUI()
+    {
+        WindowSystem.Draw();
 
-            Service.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
-            {
-                HelpMessage = "A vibe plugin for fun..."
-            });
-        }
+        if (Service.App == null)
+            return;
 
-        public void Dispose()
-        {
-            WindowSystem.RemoveAllWindows();
-            Service.CommandManager.RemoveHandler(CommandName);
-            Service.App.Dispose();
-        }
+        Service.App.DrawUI();
+    }
 
-        private void OnCommand(string command, string args)
-        {
-            Service.App.OnCommand(command, args);
-        }
-
-        private void DrawUI()
-        {
-            WindowSystem.Draw();
-
-            if (Service.App == null)
-                return;
-
-            Service.App.DrawUI();
-        }
-
-        public void DrawConfigUI()
-        {
-            WindowSystem.Windows[0].IsOpen = !WindowSystem.Windows[0].IsOpen;
-        }
+    public void DrawConfigUI()
+    {
+        WindowSystem.Windows[0].IsOpen = !WindowSystem.Windows[0].IsOpen;
     }
 }

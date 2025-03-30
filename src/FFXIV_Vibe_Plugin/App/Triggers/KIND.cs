@@ -1,11 +1,9 @@
-#nullable disable
-namespace FFXIV_Vibe_Plugin.Triggers
+namespace FFXIV_Vibe_Plugin.Triggers;
+
+public enum KIND
 {
-    public enum KIND
-    {
-        Chat,
-        Spell,
-        HPChange,
-        HPChangeOther,
-    }
+    Chat,
+    Spell,
+    HPChange,
+    HPChangeOther,
 }

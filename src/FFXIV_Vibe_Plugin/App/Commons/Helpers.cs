@@ -1,54 +1,52 @@
 using System;
 using System.Text.RegularExpressions;
 
-#nullable enable
-namespace FFXIV_Vibe_Plugin.Commons
+namespace FFXIV_Vibe_Plugin.Commons;
+
+internal class Helpers
 {
-    internal class Helpers
+    public static int GetUnix() => (int)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+    public static int ClampInt(int value, int min, int max)
     {
-        public static int GetUnix() => (int)DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (value < min)
+            return min;
 
-        public static int ClampInt(int value, int min, int max)
+        return value > max ? max : value;
+    }
+
+    public static float ClampFloat(float value, float min, float max)
+    {
+        if (value < min)
+            return min;
+
+        return value > max ? max : value;
+    }
+
+    public static int ClampIntensity(int intensity, int threshold)
+    {
+        intensity = ClampInt(intensity, 0, 100);
+
+        return (int)(intensity / (100.0 / threshold));
+    }
+
+    public static bool RegExpMatch(string text, string regexp)
+    {
+        if (regexp.Trim() == "")
+            return true;
+
+        string pattern = "" + regexp;
+
+        try
         {
-            if (value < min)
-                return min;
-            return value > max ? max : value;
+            if (Regex.Match(text, pattern, RegexOptions.IgnoreCase).Success)
+                return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Probably a wrong REGEXP for " + regexp);
         }
 
-        public static float ClampFloat(float value, float min, float max)
-        {
-            if ((double)value < (double)min)
-                return min;
-            return (double)value > (double)max ? max : value;
-        }
-
-        public static int ClampIntensity(int intensity, int threshold)
-        {
-            intensity = Helpers.ClampInt(intensity, 0, 100);
-            return (int)((double)intensity / (100.0 / (double)threshold));
-        }
-
-        public static bool RegExpMatch(string text, string regexp)
-        {
-            bool flag = false;
-            if (regexp.Trim() == "")
-            {
-                flag = true;
-            }
-            else
-            {
-                string pattern = "" + regexp;
-                try
-                {
-                    if (Regex.Match(text, pattern, RegexOptions.IgnoreCase).Success)
-                        flag = true;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error("Probably a wrong REGEXP for " + regexp);
-                }
-            }
-            return flag;
-        }
+        return false;
     }
 }

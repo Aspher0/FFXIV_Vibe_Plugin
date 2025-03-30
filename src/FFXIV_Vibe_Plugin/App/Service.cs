@@ -2,14 +2,9 @@ using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game;
 using Dalamud.IoC;
 using Dalamud.Plugin.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Dalamud.Plugin;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
 
 namespace FFXIV_Vibe_Plugin.App;
 
@@ -65,5 +60,5 @@ public class Service
         ClearConnectedPlayer();
     }
 
-    public async static Task<IPlayerCharacter?> GetPlayerCharacterAsync() => await Service.Framework.RunOnFrameworkThread(() => Service.ClientState!.LocalPlayer);
+    public async static Task<IPlayerCharacter?> GetPlayerCharacterAsync() => await Framework.RunOnFrameworkThread(() => ClientState!.LocalPlayer);
 }

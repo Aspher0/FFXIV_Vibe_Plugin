@@ -18,7 +18,7 @@ public class PlayerStats
 
     public PlayerStats()
     {
-        this.UpdatePlayerState();
+        UpdatePlayerState();
     }
 
     public void Update()
@@ -26,9 +26,9 @@ public class PlayerStats
         if (Service.ConnectedPlayerObject != null)
             return;
 
-        this.UpdatePlayerState();
-        this.UpdatePlayerName();
-        this.UpdateCurrentHp();
+        UpdatePlayerState();
+        UpdatePlayerName();
+        UpdateCurrentHp();
     }
 
     public void UpdatePlayerState()
@@ -39,7 +39,7 @@ public class PlayerStats
         Logger.Debug($"UpdatePlayerState {_CurrentHp} {_MaxHp}");
 
         _CurrentHp = _prevCurrentHp = Service.ConnectedPlayerObject!.CurrentHp;
-        this._MaxHp = this._prevMaxHp = Service.ConnectedPlayerObject!.MaxHp;
+        _MaxHp = _prevMaxHp = Service.ConnectedPlayerObject!.MaxHp;
 
         Logger.Debug($"UpdatePlayerState {_CurrentHp} {_MaxHp}");
     }
@@ -58,9 +58,10 @@ public class PlayerStats
     {
         if (Service.ConnectedPlayerObject != null)
         {
-            this._CurrentHp = Service.ConnectedPlayerObject.CurrentHp;
-            this._MaxHp = Service.ConnectedPlayerObject.MaxHp;
+            _CurrentHp = Service.ConnectedPlayerObject.CurrentHp;
+            _MaxHp = Service.ConnectedPlayerObject.MaxHp;
         }
+
         if (_CurrentHp != _prevCurrentHp)
         {
             EventHandler currentHpChanged = Event_CurrentHpChanged;
@@ -68,12 +69,15 @@ public class PlayerStats
             if (currentHpChanged != null)
                 currentHpChanged(this, EventArgs.Empty);
         }
+
         if (_MaxHp != _prevMaxHp)
         {
             EventHandler eventMaxHpChanged = Event_MaxHpChanged;
+
             if (eventMaxHpChanged != null)
                 eventMaxHpChanged(this, EventArgs.Empty);
         }
+
         _prevCurrentHp = _CurrentHp;
         _prevMaxHp = _MaxHp;
     }

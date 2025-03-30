@@ -29,11 +29,14 @@ namespace FFXIV_Vibe_Plugin.Migrations
                 TRIGGERS = Service.Configuration!.TRIGGERS,
                 VISITED_DEVICES = Service.Configuration!.VISITED_DEVICES
             };
+
             Service.Configuration!.Version = num + 1;
             Service.Configuration!.CurrentProfileName = configurationProfile.Name;
             Service.Configuration!.Profiles.Add(configurationProfile);
             Service.Configuration!.Save();
+
             Logger.Warn("Migration from 2.0.0 to 2.1.0 using profiles done successfully");
+
             return true;
         }
     }
