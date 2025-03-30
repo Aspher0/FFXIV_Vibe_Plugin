@@ -31,21 +31,24 @@ internal class ActionEffect
 
     private void InitHook()
     {
-        try
+        Service.Framework.RunOnFrameworkThread(() =>
         {
-            // Found on: https://github.com/perchbirdd/DamageInfoPlugin/blob/main/DamageInfoPlugin/DamageInfoPlugin.cs#L126
-            var receiveActionEffectFuncPtr = Service.Scanner.ScanText("40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 70");
-            receiveActionEffectHook = Service.InteropProvider.HookFromAddress<HOOK_ReceiveActionEffectDelegate>(receiveActionEffectFuncPtr, new HOOK_ReceiveActionEffectDelegate(ReceiveActionEffect), 0);
-            receiveActionEffectHook.Enable();
-        }
-        catch (Exception ex)
-        {
-            Dispose();
-            Logger.Warn("Encountered an error loading HookActionEffect: " + ex.Message + ". Disabling it...");
-            throw;
-        }
+            try
+            {
+                // Found on: https://github.com/perchbirdd/DamageInfoPlugin/blob/main/DamageInfoPlugin/DamageInfoPlugin.cs#L126
+                var receiveActionEffectFuncPtr = Service.Scanner.ScanText("40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 70");
+                receiveActionEffectHook = Service.InteropProvider.HookFromAddress<HOOK_ReceiveActionEffectDelegate>(receiveActionEffectFuncPtr, ReceiveActionEffect);
+                receiveActionEffectHook.Enable();
+            }
+            catch (Exception ex)
+            {
+                Dispose();
+                Logger.Warn("Encountered an error loading HookActionEffect: " + ex.Message + ". Disabling it...");
+                throw;
+            }
 
-        Logger.Log("HookActionEffect was correctly enabled!");
+            Logger.Log("HookActionEffect was correctly enabled!");
+        });
     }
 
     private void ReceiveActionEffect(int sourceId, IntPtr sourceCharacter, IntPtr pos, IntPtr effectHeader, IntPtr effectArray, IntPtr effectTrail)
