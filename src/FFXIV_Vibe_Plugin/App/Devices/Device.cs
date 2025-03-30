@@ -12,7 +12,6 @@ namespace FFXIV_Vibe_Plugin.Device
 {
     public class Device
     {
-        private readonly Logger Logger;
         private readonly ButtplugClientDevice? ButtplugClientDevice;
         public int Id = -1;
         public string Name = "UnsetDevice";
@@ -37,14 +36,13 @@ namespace FFXIV_Vibe_Plugin.Device
         public int[] CurrentRotateIntensity = Array.Empty<int>();
         public int[] CurrentOscillateIntensity = Array.Empty<int>();
         public int[] CurrentLinearIntensity = Array.Empty<int>();
-        public DebounceDispatcher VibrateDebouncer = new DebounceDispatcher(25);
-        public DebounceDispatcher RotateDebouncer = new DebounceDispatcher(25);
-        public DebounceDispatcher OscillateDebouncer = new DebounceDispatcher(25);
-        public DebounceDispatcher LinearDebouncer = new DebounceDispatcher(25);
+        public DebounceDispatcher VibrateDebouncer = new DebounceDispatcher(new(25));
+        public DebounceDispatcher RotateDebouncer = new DebounceDispatcher(new(25));
+        public DebounceDispatcher OscillateDebouncer = new DebounceDispatcher(new(25));
+        public DebounceDispatcher LinearDebouncer = new DebounceDispatcher(new(25));
 
-        public Device(ButtplugClientDevice buttplugClientDevice, Logger logger)
+        public Device(ButtplugClientDevice buttplugClientDevice)
         {
-            this.Logger = logger;
             if (buttplugClientDevice == null)
                 return;
             this.ButtplugClientDevice = buttplugClientDevice;
@@ -75,9 +73,8 @@ namespace FFXIV_Vibe_Plugin.Device
 
         private void SetCommands()
         {
-            if (this.ButtplugClientDevice == null)
+            if (ButtplugClientDevice == null)
             {
-                Logger logger = this.Logger;
                 DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(34, 2);
                 interpolatedStringHandler.AppendLiteral("Device ");
                 interpolatedStringHandler.AppendFormatted<int>(this.Id);
@@ -85,7 +82,7 @@ namespace FFXIV_Vibe_Plugin.Device
                 interpolatedStringHandler.AppendFormatted(this.Name);
                 interpolatedStringHandler.AppendLiteral(" has ClientDevice to null!");
                 string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                logger.Error(stringAndClear);
+                Logger.Error(stringAndClear);
             }
             else
             {
@@ -213,7 +210,7 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                this.Logger.Warn("Device.UpdateBatteryLevel: " + ex.Message);
+                Logger.Warn("Device.UpdateBatteryLevel: " + ex.Message);
             }
         }
 
@@ -244,7 +241,7 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Device.Stop: " + ex.Message);
+                Logger.Error("Device.Stop: " + ex.Message);
             }
             this.ResetMotors();
         }
@@ -275,7 +272,7 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Device.SendVibrate: " + ex.Message);
+                Logger.Error("Device.SendVibrate: " + ex.Message);
             }
         }
 
@@ -295,22 +292,22 @@ namespace FFXIV_Vibe_Plugin.Device
                     for (int index = 0; index < nbrMotors; ++index)
                         this.CurrentRotateIntensity[index] = intensity;
                 }
-                List<(double, bool)> motorIntensity = new List<(double, bool)>();
+                List<RotateCmd.RotateCommand> motorIntensity = new List<RotateCmd.RotateCommand>();
                 for (int index = 0; index < nbrMotors; ++index)
                 {
                     double num = (double)Helpers.ClampIntensity(this.CurrentRotateIntensity[index], threshold) / 100.0;
-                    motorIntensity.Add((num, clockWise));
+                    motorIntensity.Add(new(num, clockWise));
                 }
                 this.RotateDebouncer.Debounce((Action)(() =>
                 {
                     for (int index = 0; index < nbrMotors; ++index)
-                        this.Logger.Warn(index.ToString() + " MotorIntensity: " + motorIntensity[index].ToString());
-                    this.ButtplugClientDevice.RotateAsync((IEnumerable<(double, bool)>)motorIntensity);
+                        Logger.Warn(index.ToString() + " MotorIntensity: " + motorIntensity[index].ToString());
+                    this.ButtplugClientDevice.RotateAsync(motorIntensity);
                 }));
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Device.SendRotate: " + ex.Message);
+                Logger.Error("Device.SendRotate: " + ex.Message);
             }
         }
 
@@ -339,13 +336,13 @@ namespace FFXIV_Vibe_Plugin.Device
                 this.OscillateDebouncer.Debounce((Action)(() =>
                 {
                     for (int index = 0; index < nbrMotors; ++index)
-                        this.Logger.Warn(index.ToString() + " MotorIntensity: " + motorIntensity[index].ToString());
-                    this.ButtplugClientDevice.OscillateAsync((IEnumerable<double>)motorIntensity);
+                        Logger.Warn(index.ToString() + " MotorIntensity: " + motorIntensity[index].ToString());
+                    this.ButtplugClientDevice.OscillateAsync(motorIntensity);
                 }));
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Device.SendOscillate: " + ex.Message);
+                Logger.Error("Device.SendOscillate: " + ex.Message);
             }
         }
 
@@ -365,22 +362,22 @@ namespace FFXIV_Vibe_Plugin.Device
                     for (int index = 0; index < nbrMotors; ++index)
                         this.CurrentLinearIntensity[index] = intensity;
                 }
-                List<(uint, double)> motorIntensity = new List<(uint, double)>();
+                List<LinearCmd.VectorCommand> motorIntensity = new List<LinearCmd.VectorCommand>();
                 for (int index = 0; index < nbrMotors; ++index)
                 {
-                    double num = (double)Helpers.ClampIntensity(this.CurrentLinearIntensity[index], threshold) / 100.0;
-                    motorIntensity.Add(((uint)index, num));
+                    double num = Helpers.ClampIntensity(this.CurrentLinearIntensity[index], threshold) / 100.0;
+                    motorIntensity.Add(new(index, (uint)num));
                 }
                 this.LinearDebouncer.Debounce((Action)(() =>
                 {
                     for (int index = 0; index < nbrMotors; ++index)
-                        this.Logger.Warn(index.ToString() + " MotorIntensity: " + motorIntensity[index].ToString());
-                    this.ButtplugClientDevice.LinearAsync((IEnumerable<(uint, double)>)motorIntensity);
+                        Logger.Warn(index.ToString() + " MotorIntensity: " + motorIntensity[index].ToString());
+                    this.ButtplugClientDevice.LinearAsync(motorIntensity);
                 }));
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Device.SendRotate: " + ex.Message);
+                Logger.Error("Device.SendRotate: " + ex.Message);
             }
         }
     }

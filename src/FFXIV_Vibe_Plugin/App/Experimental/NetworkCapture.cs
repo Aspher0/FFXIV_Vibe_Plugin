@@ -1,5 +1,6 @@
 using Dalamud.Game.Network;
 using Dalamud.Plugin.Services;
+using FFXIV_Vibe_Plugin.App;
 using FFXIV_Vibe_Plugin.Commons;
 using System;
 using System.Runtime.CompilerServices;
@@ -9,17 +10,9 @@ namespace FFXIV_Vibe_Plugin.Experimental
 {
     internal class NetworkCapture
     {
-        private readonly Logger Logger;
-        private readonly IGameNetwork? GameNetwork;
         private bool ExperimentalNetworkCaptureStarted;
 
-        public NetworkCapture(Logger logger, IGameNetwork gameNetwork)
-        {
-            this.Logger = logger;
-            this.GameNetwork = gameNetwork;
-        }
-
-        public void Dispose() => this.StopNetworkCapture();
+        public void Dispose() => StopNetworkCapture();
 
         public void StartNetworkCapture()
         {
@@ -27,16 +20,14 @@ namespace FFXIV_Vibe_Plugin.Experimental
 
         public void StopNetworkCapture()
         {
-            if (!this.ExperimentalNetworkCaptureStarted)
+            if (!ExperimentalNetworkCaptureStarted)
                 return;
-            this.Logger.Debug("STOPPING EXPERIMENTAL");
-            if (this.GameNetwork != null)
-            {
-                // ISSUE: method pointer
-                //this.GameNetwork.NetworkMessage -= new IGameNetwork.OnNetworkMessageDelegate((object)this, __methodptr(OnNetworkReceived));
-                this.GameNetwork.NetworkMessage -= new IGameNetwork.OnNetworkMessageDelegate(OnNetworkReceived);
-            }
-            this.ExperimentalNetworkCaptureStarted = false;
+
+            Logger.Debug("STOPPING EXPERIMENTAL");
+
+            Service.GameNetwork.NetworkMessage -= new IGameNetwork.OnNetworkMessageDelegate(OnNetworkReceived);
+
+            ExperimentalNetworkCaptureStarted = false;
         }
 
         private unsafe void OnNetworkReceived(
@@ -51,7 +42,6 @@ namespace FFXIV_Vibe_Plugin.Experimental
             uint num1 = 111111111;
             if (direction == NetworkMessageDirection.ZoneUp) // A VERIFIER
                 num1 = *(uint*)(dataPtr + new IntPtr(4));
-            Logger logger1 = this.Logger;
             DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(80, 8);
             interpolatedStringHandler.AppendLiteral("Hex: ");
             interpolatedStringHandler.AppendFormatted<int>(int32, "X");
@@ -70,7 +60,7 @@ namespace FFXIV_Vibe_Plugin.Experimental
             interpolatedStringHandler.AppendLiteral(" NAME: ");
             interpolatedStringHandler.AppendFormatted(name);
             string stringAndClear1 = interpolatedStringHandler.ToStringAndClear();
-            logger1.Log(stringAndClear1);
+            Logger.Log(stringAndClear1);
             if (!(name == "ClientZoneIpcType-ClientTrigger"))
                 return;
             ushort num2 = *(ushort*)dataPtr;
@@ -92,7 +82,6 @@ namespace FFXIV_Vibe_Plugin.Experimental
                     str += "WeaponOut";
                     break;
             }
-            Logger logger2 = this.Logger;
             interpolatedStringHandler = new DefaultInterpolatedStringHandler(12, 13);
             interpolatedStringHandler.AppendFormatted(name);
             interpolatedStringHandler.AppendLiteral(" ");
@@ -120,7 +109,7 @@ namespace FFXIV_Vibe_Plugin.Experimental
             interpolatedStringHandler.AppendLiteral(" ");
             interpolatedStringHandler.AppendFormatted<ulong>(num10);
             string stringAndClear2 = interpolatedStringHandler.ToStringAndClear();
-            logger2.Log(stringAndClear2);
+            Logger.Log(stringAndClear2);
         }
     }
 }

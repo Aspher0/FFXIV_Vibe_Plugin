@@ -26,13 +26,9 @@ namespace FFXIV_Vibe_Plugin
     public class PluginUI : Window, IDisposable
     {
         private int frameCounter;
-        private readonly IDalamudPluginInterface PluginInterface;
-        private readonly Configuration Configuration;
         private ConfigurationProfile ConfigurationProfile;
         private readonly DevicesController DevicesController;
         private readonly TriggersController TriggerController;
-        private readonly Main app;
-        private readonly Logger Logger;
         private readonly Patterns Patterns = new Patterns();
         private readonly string DonationLink = "https://paypal.me/kaciedev";
         private readonly string KofiLink = "https://ko-fi.com/ffxivvibeplugin";
@@ -58,34 +54,21 @@ namespace FFXIV_Vibe_Plugin
         private Trigger? SelectedTrigger;
         private string triggersViewMode = "default";
         private string _tmp_exportPatternResponse = "";
-        private Premium Premium;
         private string PremiumFeatureText = "PREMIUM FEATURE";
         private int FreeAccount_MaxTriggers = 10;
 
         public PluginUI(
-          Main currentPlugin,
-          Logger logger,
-          IDalamudPluginInterface pluginInterface,
-          Configuration configuration,
           ConfigurationProfile profile,
           DevicesController deviceController,
           TriggersController triggersController,
-          Patterns Patterns,
-          Premium premium)
-          : base("FFXIV Vibe Plugin", (ImGuiWindowFlags)56, false)
+          Patterns Patterns) : base("FFXIV Vibe Plugin", (ImGuiWindowFlags)56, false)
         {
             ImGui.SetNextWindowPos(new Vector2(100f, 100f), (ImGuiCond)8);
             ImGui.SetNextWindowSize(new Vector2((float)this.WIDTH, (float)this.HEIGHT), (ImGuiCond)8);
-            this.Logger = logger;
-            this.Premium = premium;
-            this.Configuration = configuration;
             this.ConfigurationProfile = profile;
-            this.PluginInterface = pluginInterface;
-            this.app = currentPlugin;
             this.DevicesController = deviceController;
             this.TriggerController = triggersController;
             this.Patterns = Patterns;
-            // this.LoadImages();
         }
 
         public void Dispose()
@@ -94,7 +77,7 @@ namespace FFXIV_Vibe_Plugin
 
         public void SetProfile(ConfigurationProfile profile) => this.ConfigurationProfile = profile;
 
-        public override void Draw() // A VERIFIER
+        public override void Draw()
         {
             try
             {
@@ -102,28 +85,27 @@ namespace FFXIV_Vibe_Plugin
             }
             catch (Exception ex)
             {
-                this.Logger.Error("UI ERROR: ");
-                this.Logger.Error(ex.ToString());
+                Logger.Error("UI ERROR: ");
+                Logger.Error(ex.ToString());
             }
             this.frameCounter = (this.frameCounter + 1) % 400;
         }
 
         public void DrawMainWindow()
         {
-            this.FreeAccount_MaxTriggers = this.Premium == null ? this.FreeAccount_MaxTriggers : this.Premium.FreeAccount_MaxTriggers;
-            if (!this._expandedOnce)
+            if (!_expandedOnce)
             {
                 ImGui.SetNextWindowCollapsed(false);
-                this._expandedOnce = true;
+                _expandedOnce = true;
             }
             ImGui.Spacing();
-            UIBanner.Draw(this.frameCounter, this.Logger, this.DonationLink, this.KofiLink, this.DevicesController, this.Premium);
+            UIBanner.Draw(frameCounter, this.DonationLink, this.KofiLink, this.DevicesController);
             ImGui.Columns(1);
             if (!ImGui.BeginTabBar("##ConfigTabBar", (ImGuiTabBarFlags)0))
                 return;
             if (ImGui.BeginTabItem("Connect"))
             {
-                UIConnect.Draw(this.Configuration, this.ConfigurationProfile, this.app, this.DevicesController, this.Premium);
+                UIConnect.Draw(ConfigurationProfile, DevicesController);
                 ImGui.EndTabItem();
             }
             if (ImGui.BeginTabItem("Options"))
@@ -161,13 +143,13 @@ namespace FFXIV_Vibe_Plugin
                 ImGui.TableSetupColumn("###GENERAL_OPTIONS_TABLE_COL1", (ImGuiTableColumnFlags)8, 250f);
                 ImGui.TableSetupColumn("###GENERAL_OPTIONS_TABLE_COL2", (ImGuiTableColumnFlags)4);
                 ImGui.TableNextColumn();
-                bool buttplugServerShouldWss = this.ConfigurationProfile.BUTTPLUG_SERVER_SHOULD_WSS;
+                bool buttplugServerShouldWss = ConfigurationProfile.BUTTPLUG_SERVER_SHOULD_WSS;
                 ImGui.Text("Connects through WSS");
                 ImGui.TableNextColumn();
                 if (ImGui.Checkbox("###GENERAL_OPTIONS_WSS", ref buttplugServerShouldWss))
                 {
-                    this.ConfigurationProfile.BUTTPLUG_SERVER_SHOULD_WSS = buttplugServerShouldWss;
-                    this.Configuration.Save();
+                    ConfigurationProfile.BUTTPLUG_SERVER_SHOULD_WSS = buttplugServerShouldWss;
+                    Service.Configuration!.Save();
                 }
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("Connects through WSS rather than WS which should not be needed for local connection (default: false)");
@@ -179,7 +161,7 @@ namespace FFXIV_Vibe_Plugin
                 if (ImGui.Checkbox("###GENERAL_OPTIONS_AUTO_OPEN", ref autoOpen))
                 {
                     this.ConfigurationProfile.AUTO_OPEN = autoOpen;
-                    this.Configuration.Save();
+                    Service.Configuration!.Save();
                 }
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
@@ -190,7 +172,7 @@ namespace FFXIV_Vibe_Plugin
                 if (ImGui.SliderInt("###OPTION_MaximumThreshold", ref maxVibeThreshold, 2, 100))
                 {
                     this.ConfigurationProfile.MAX_VIBE_THRESHOLD = maxVibeThreshold;
-                    this.Configuration.Save();
+                    Service.Configuration!.Save();
                 }
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("Maximum threshold for vibes (will override every devices).");
@@ -198,7 +180,7 @@ namespace FFXIV_Vibe_Plugin
                 ImGui.Text("Log casted spells:");
                 ImGui.TableNextColumn();
                 if (ImGui.Checkbox("###OPTION_VERBOSE_SPELL", ref this.ConfigurationProfile.VERBOSE_SPELL))
-                    this.Configuration.Save();
+                    Service.Configuration!.Save();
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("Use the /xllog to see all casted spells. Disable this to have better ingame performance.");
                 ImGui.TableNextRow();
@@ -206,7 +188,7 @@ namespace FFXIV_Vibe_Plugin
                 ImGui.Text("Log chat triggered:");
                 ImGui.TableNextColumn();
                 if (ImGui.Checkbox("###OPTION_VERBOSE_CHAT", ref this.ConfigurationProfile.VERBOSE_CHAT))
-                    this.Configuration.Save();
+                    Service.Configuration!.Save();
                 ImGui.SameLine();
                 ImGuiComponents.HelpMarker("Use the /xllog to see all chat message. Disable this to have better ingame performance.");
                 ImGui.EndTable();
@@ -217,126 +199,122 @@ namespace FFXIV_Vibe_Plugin
             ImGui.Spacing();
             ImGui.TextColored(ImGuiColors.DalamudViolet, "Profile settings");
             ImGui.BeginChild("###CONFIGURATION_PROFILE_ZONE", new Vector2(-1f, this._tmp_currentProfile_ErrorMsg == "" ? 100f : 120f), true);
-            if (this.Premium != null && this.Premium.IsPremium())
+
+            if (ImGui.BeginTable("###CONFIGURATION_PROFILE_TABLE", 3))
             {
-                if (ImGui.BeginTable("###CONFIGURATION_PROFILE_TABLE", 3))
+                ImGui.TableSetupColumn("###CONFIGURATION_PROFILE_TABLE_COL1", (ImGuiTableColumnFlags)8, 150f);
+                ImGui.TableSetupColumn("###CONFIGURATION_PROFILE_TABLE_COL2", (ImGuiTableColumnFlags)8, 350f);
+                ImGui.TableSetupColumn("###CONFIGURATION_PROFILE_TABLE_COL3", (ImGuiTableColumnFlags)4);
+                ImGui.TableNextColumn();
+                ImGui.Text("Current profile:");
+                ImGui.TableNextColumn();
+                string[] array = Service.Configuration!.Profiles.Select<ConfigurationProfile, string>((Func<ConfigurationProfile, string>)(profile => profile.Name)).ToArray<string>();
+                int index = Service.Configuration!.Profiles.FindIndex((Predicate<ConfigurationProfile>)(profile => profile.Name == Service.Configuration!.CurrentProfileName));
+                ImGui.SetNextItemWidth(350f);
+                if (ImGui.Combo("###CONFIGURATION_CURRENT_PROFILE", ref index, array, array.Length))
                 {
-                    ImGui.TableSetupColumn("###CONFIGURATION_PROFILE_TABLE_COL1", (ImGuiTableColumnFlags)8, 150f);
-                    ImGui.TableSetupColumn("###CONFIGURATION_PROFILE_TABLE_COL2", (ImGuiTableColumnFlags)8, 350f);
-                    ImGui.TableSetupColumn("###CONFIGURATION_PROFILE_TABLE_COL3", (ImGuiTableColumnFlags)4);
-                    ImGui.TableNextColumn();
-                    ImGui.Text("Current profile:");
-                    ImGui.TableNextColumn();
-                    string[] array = this.Configuration.Profiles.Select<ConfigurationProfile, string>((Func<ConfigurationProfile, string>)(profile => profile.Name)).ToArray<string>();
-                    int index = this.Configuration.Profiles.FindIndex((Predicate<ConfigurationProfile>)(profile => profile.Name == this.Configuration.CurrentProfileName));
-                    ImGui.SetNextItemWidth(350f);
-                    if (ImGui.Combo("###CONFIGURATION_CURRENT_PROFILE", ref index, array, array.Length))
-                    {
-                        this.Configuration.CurrentProfileName = this.Configuration.Profiles[index].Name;
-                        this.app.SetProfile(this.Configuration.CurrentProfileName);
-                        this.Logger.Debug("New profile selected: " + this.Configuration.CurrentProfileName);
-                        this.Configuration.Save();
-                    }
-                    ImGui.TableNextColumn();
-                    if (ImGuiComponents.IconButton((FontAwesomeIcon)61944))
-                    {
-                        if (this.Configuration.Profiles.Count <= 1)
-                        {
-                            string msg = "You can't delete this profile. At least one profile should exists. Create another one before deleting.";
-                            this.Logger.Error(msg);
-                            this._tmp_currentProfile_ErrorMsg = msg;
-                        }
-                        else
-                        {
-                            this.Configuration.RemoveProfile(this.ConfigurationProfile.Name);
-                            ConfigurationProfile firstProfile = this.Configuration.GetFirstProfile();
-                            if (firstProfile != null)
-                                this.app.SetProfile(firstProfile.Name);
-                            this.Configuration.Save();
-                        }
-                    }
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGui.Text("Add new profile: ");
-                    ImGui.TableNextColumn();
-                    ImGui.SetNextItemWidth(350f);
-                    if (ImGui.InputText("###CONFIGURATION_NEW_PROFILE_NAME", ref this._tmp_currentProfileNameToAdd, 150U))
-                        this._tmp_currentProfile_ErrorMsg = "";
-                    ImGui.TableNextColumn();
-                    if (this._tmp_currentProfileNameToAdd.Length > 0 && ImGuiComponents.IconButton((FontAwesomeIcon)61543) && this._tmp_currentProfileNameToAdd.Trim() != "")
-                    {
-                        if (!this.Configuration.AddProfile(this._tmp_currentProfileNameToAdd))
-                        {
-                            string msg = "The current profile name '" + this._tmp_currentProfileNameToAdd + "' already exists!";
-                            this.Logger.Error(msg);
-                            this._tmp_currentProfile_ErrorMsg = msg;
-                        }
-                        else
-                        {
-                            this.app.SetProfile(this._tmp_currentProfileNameToAdd);
-                            this.Logger.Debug("New profile added " + this._tmp_currentProfileNameToAdd);
-                            this._tmp_currentProfileNameToAdd = "";
-                            this.Configuration.Save();
-                        }
-                    }
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGui.Text("Rename current profile");
-                    ImGui.TableNextColumn();
-                    ImGui.SetNextItemWidth(350f);
-                    if (ImGui.InputText("###CONFIGURATION_CURRENT_PROFILE_RENAME", ref this.ConfigurationProfile.Name, 150U))
-                    {
-                        this.Configuration.CurrentProfileName = this.ConfigurationProfile.Name;
-                        this.Configuration.Save();
-                    }
-                    ImGui.EndTable();
+                    Service.Configuration!.CurrentProfileName = Service.Configuration!.Profiles[index].Name;
+                    Service.App.SetProfile(Service.Configuration!.CurrentProfileName);
+                    Logger.Debug("New profile selected: " + Service.Configuration!.CurrentProfileName);
+                    Service.Configuration!.Save();
                 }
-                if (this._tmp_currentProfile_ErrorMsg != "")
-                    ImGui.TextColored(ImGuiColors.DalamudRed, this._tmp_currentProfile_ErrorMsg);
+                ImGui.TableNextColumn();
+                if (ImGuiComponents.IconButton((FontAwesomeIcon)61944))
+                {
+                    if (Service.Configuration!.Profiles.Count <= 1)
+                    {
+                        string msg = "You can't delete this profile. At least one profile should exists. Create another one before deleting.";
+                        Logger.Error(msg);
+                        this._tmp_currentProfile_ErrorMsg = msg;
+                    }
+                    else
+                    {
+                        Service.Configuration!.RemoveProfile(this.ConfigurationProfile.Name);
+                        ConfigurationProfile firstProfile = Service.Configuration!.GetFirstProfile();
+                        if (firstProfile != null)
+                            Service.App.SetProfile(firstProfile.Name);
+                        Service.Configuration!.Save();
+                    }
+                }
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.Text("Add new profile: ");
+                ImGui.TableNextColumn();
+                ImGui.SetNextItemWidth(350f);
+                if (ImGui.InputText("###CONFIGURATION_NEW_PROFILE_NAME", ref this._tmp_currentProfileNameToAdd, 150U))
+                    this._tmp_currentProfile_ErrorMsg = "";
+                ImGui.TableNextColumn();
+                if (this._tmp_currentProfileNameToAdd.Length > 0 && ImGuiComponents.IconButton((FontAwesomeIcon)61543) && this._tmp_currentProfileNameToAdd.Trim() != "")
+                {
+                    if (!Service.Configuration!.AddProfile(this._tmp_currentProfileNameToAdd))
+                    {
+                        string msg = "The current profile name '" + this._tmp_currentProfileNameToAdd + "' already exists!";
+                        Logger.Error(msg);
+                        this._tmp_currentProfile_ErrorMsg = msg;
+                    }
+                    else
+                    {
+                        Service.App.SetProfile(this._tmp_currentProfileNameToAdd);
+                        Logger.Debug("New profile added " + this._tmp_currentProfileNameToAdd);
+                        this._tmp_currentProfileNameToAdd = "";
+                        Service.Configuration!.Save();
+                    }
+                }
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.Text("Rename current profile");
+                ImGui.TableNextColumn();
+                ImGui.SetNextItemWidth(350f);
+                if (ImGui.InputText("###CONFIGURATION_CURRENT_PROFILE_RENAME", ref this.ConfigurationProfile.Name, 150U))
+                {
+                    Service.Configuration!.CurrentProfileName = this.ConfigurationProfile.Name;
+                    Service.Configuration!.Save();
+                }
+                ImGui.EndTable();
             }
-            else
-                ImGui.TextColored(ImGuiColors.DalamudGrey, this.PremiumFeatureText);
+            if (this._tmp_currentProfile_ErrorMsg != "")
+                ImGui.TextColored(ImGuiColors.DalamudRed, this._tmp_currentProfile_ErrorMsg);
+
             ImGui.EndChild();
             ImGui.Spacing();
             ImGui.TextColored(ImGuiColors.DalamudViolet, "Triggers Import/Export Settings");
             ImGui.BeginChild("###EXPORT_OPTIONS_ZONE", new Vector2(-1f, 100f), true);
-            if (this.Premium != null && this.Premium.IsPremium())
+
+            if (ImGui.BeginTable("###EXPORT_OPTIONS_TABLE", 2))
             {
-                if (ImGui.BeginTable("###EXPORT_OPTIONS_TABLE", 2))
+                ImGui.TableSetupColumn("###EXPORT_OPTIONS_TABLE_COL1", (ImGuiTableColumnFlags)8, 250f);
+                ImGui.TableSetupColumn("###EXPORT_OPTIONS_TABLE_COL2", (ImGuiTableColumnFlags)4);
+                ImGui.TableNextColumn();
+                ImGui.Text("Trigger Import/Export Directory:");
+                ImGui.TableNextColumn();
+                if (ImGui.InputText("###EXPORT_DIRECTORY_INPUT", ref this.ConfigurationProfile.EXPORT_DIR, 200U))
                 {
-                    ImGui.TableSetupColumn("###EXPORT_OPTIONS_TABLE_COL1", (ImGuiTableColumnFlags)8, 250f);
-                    ImGui.TableSetupColumn("###EXPORT_OPTIONS_TABLE_COL2", (ImGuiTableColumnFlags)4);
-                    ImGui.TableNextColumn();
-                    ImGui.Text("Trigger Import/Export Directory:");
-                    ImGui.TableNextColumn();
-                    if (ImGui.InputText("###EXPORT_DIRECTORY_INPUT", ref this.ConfigurationProfile.EXPORT_DIR, 200U))
+                    Service.Configuration!.EXPORT_DIR = this.ConfigurationProfile.EXPORT_DIR;
+                    Service.Configuration!.Save();
+                }
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                if (ImGui.Button("Clear Import/Export Directory"))
+                {
+                    if (!this.ConfigurationProfile.EXPORT_DIR.Equals(""))
                     {
-                        this.Configuration.EXPORT_DIR = this.ConfigurationProfile.EXPORT_DIR;
-                        this.Configuration.Save();
-                    }
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    if (ImGui.Button("Clear Import/Export Directory"))
-                    {
-                        if (!this.ConfigurationProfile.EXPORT_DIR.Equals(""))
+                        try
                         {
-                            try
-                            {
-                                foreach (string file in Directory.GetFiles(this.ConfigurationProfile.EXPORT_DIR))
-                                    File.Delete(file);
-                            }
-                            catch
-                            {
-                            }
+                            foreach (string file in Directory.GetFiles(this.ConfigurationProfile.EXPORT_DIR))
+                                File.Delete(file);
+                        }
+                        catch
+                        {
                         }
                     }
-                    ImGui.SameLine();
-                    ImGuiComponents.HelpMarker("Deletes ALL files in the Import/Export Directory.");
-                    ImGui.EndTable();
                 }
-                else
-                    ImGui.TextColored(ImGuiColors.DalamudGrey, this.PremiumFeatureText);
+                ImGui.SameLine();
+                ImGuiComponents.HelpMarker("Deletes ALL files in the Import/Export Directory.");
+                ImGui.EndTable();
             }
+            else
+                ImGui.TextColored(ImGuiColors.DalamudGrey, this.PremiumFeatureText);
+
             ImGui.EndChild();
         }
 
@@ -489,8 +467,7 @@ namespace FFXIV_Vibe_Plugin
                 ImGui.InputText("###TriggersSelector_SearchBar", ref this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR, 200U);
                 ImGui.Spacing();
                 int num1 = triggers.Count;
-                if (this.Premium == null || !this.Premium.IsPremium())
-                    num1 = this.FreeAccount_MaxTriggers;
+
                 for (int index1 = 0; index1 < triggers.Count; ++index1)
                 {
                     Trigger trigger1 = triggers[index1];
@@ -508,7 +485,7 @@ namespace FFXIV_Vibe_Plugin
                         interpolatedStringHandler.AppendFormatted(trigger1.Name);
                         string stringAndClear = interpolatedStringHandler.ToStringAndClear();
                         string str3 = stringAndClear + "###" + trigger1.Id;
-                        if (Helpers.RegExpMatch(this.Logger, stringAndClear, this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR))
+                        if (Helpers.RegExpMatch(stringAndClear, this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR))
                         {
                             if (index1 < num1)
                             {
@@ -522,13 +499,7 @@ namespace FFXIV_Vibe_Plugin
                                 ImGui.TextColored(ImGuiColors.DalamudGrey, this.PremiumFeatureText + ": " + stringAndClear);
                             if (ImGui.IsItemHovered())
                                 ImGui.SetTooltip(stringAndClear ?? "");
-                            //if (ImGui.BeginDragDropSource())
-                            //{
-                            //    this._tmp_currentDraggingTriggerIndex = index1;
-                            //    ImGui.Text("Dragging: " + stringAndClear);
-                            //    ImGui.SetDragDropPayload(str3 ?? "", index1, 4U); // A VERIFIER
-                            //    ImGui.EndDragDropSource();
-                            //}
+
                             if (ImGui.BeginDragDropTarget())
                             {
                                 if (this._tmp_currentDraggingTriggerIndex > -1 && ImGui.IsMouseReleased((ImGuiMouseButton)0))
@@ -546,7 +517,7 @@ namespace FFXIV_Vibe_Plugin
                                     Trigger trigger4 = trigger3;
                                     triggerList2[index4] = trigger4;
                                     this._tmp_currentDraggingTriggerIndex = -1;
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 }
                                 ImGui.EndDragDropTarget();
                             }
@@ -577,7 +548,7 @@ namespace FFXIV_Vibe_Plugin
                             ImGui.Text("Enabled:");
                             ImGui.TableNextColumn();
                             if (ImGui.Checkbox("###TRIGGER_ENABLED", ref this.SelectedTrigger.Enabled))
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             ImGui.TableNextRow();
                             ImGui.TableNextColumn();
                             ImGui.Text("Trigger Name:");
@@ -586,7 +557,7 @@ namespace FFXIV_Vibe_Plugin
                             {
                                 if (this.SelectedTrigger.Name == "")
                                     this.SelectedTrigger.Name = "no_name";
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.TableNextRow();
                             ImGui.TableNextColumn();
@@ -596,26 +567,19 @@ namespace FFXIV_Vibe_Plugin
                             {
                                 if (this.SelectedTrigger.Description == "")
                                     this.SelectedTrigger.Description = "no_description";
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.TableNextRow();
                             ImGui.TableNextColumn();
                             ImGui.Text("Kind:");
                             ImGui.TableNextColumn();
                             string[] names = Enum.GetNames(typeof(KIND));
-                            bool flag1 = this.Premium == null || !this.Premium.IsPremium();
-                            if (flag1)
-                                names[3] = "HPChangeOther (PREMIUM ONLY)";
+
                             int num = this.SelectedTrigger.Kind;
                             if (ImGui.Combo("###TRIGGER_FORM_KIND", ref num, names, names.Length))
                             {
-                                if (num == 3 & flag1)
-                                {
-                                    ImGui.OpenPopup("HpChangeOther Premium Only");
-                                    num = 2;
-                                }
                                 this.SelectedTrigger.Kind = num;
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             bool flag2 = true;
                             if (ImGui.BeginPopupModal("HpChangeOther Premium Only", ref flag2, (ImGuiWindowFlags)67))
@@ -633,18 +597,15 @@ namespace FFXIV_Vibe_Plugin
                                 ImGui.TableNextColumn();
                                 ImGui.Text("Player name:");
                                 ImGui.TableNextColumn();
-                                if (this.Premium != null && this.Premium.IsPremium())
+
+                                if (ImGui.InputText("###TRIGGER_CHAT_FROM_PLAYER_NAME", ref this.SelectedTrigger.FromPlayerName, 100U))
                                 {
-                                    if (ImGui.InputText("###TRIGGER_CHAT_FROM_PLAYER_NAME", ref this.SelectedTrigger.FromPlayerName, 100U))
-                                    {
-                                        this.SelectedTrigger.FromPlayerName = this.SelectedTrigger.FromPlayerName.Trim();
-                                        this.Configuration.Save();
-                                    }
-                                    ImGui.SameLine();
-                                    ImGuiComponents.HelpMarker("You can use RegExp. Leave empty for any. Ignored if chat listening to 'Echo' and chat message we through it.");
+                                    this.SelectedTrigger.FromPlayerName = this.SelectedTrigger.FromPlayerName.Trim();
+                                    Service.Configuration!.Save();
                                 }
-                                else
-                                    ImGui.TextColored(ImGuiColors.DalamudGrey, this.PremiumFeatureText);
+                                ImGui.SameLine();
+                                ImGuiComponents.HelpMarker("You can use RegExp. Leave empty for any. Ignored if chat listening to 'Echo' and chat message we through it.");
+
                                 ImGui.TableNextRow();
                             }
                             ImGui.TableNextColumn();
@@ -654,14 +615,14 @@ namespace FFXIV_Vibe_Plugin
                             if (ImGui.SliderFloat("###TRIGGER_FORM_START_AFTER", ref this.SelectedTrigger.StartAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER))
                             {
                                 this.SelectedTrigger.StartAfter = Helpers.ClampFloat(this.SelectedTrigger.StartAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER);
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.SameLine();
                             ImGui.SetNextItemWidth(45f);
                             if (ImGui.InputFloat("###TRIGGER_FORM_START_AFTER_INPUT", ref this.SelectedTrigger.StartAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER))
                             {
                                 this.SelectedTrigger.StartAfter = Helpers.ClampFloat(this.SelectedTrigger.StartAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER);
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.SameLine();
                             ImGuiComponents.HelpMarker("In seconds");
@@ -673,14 +634,14 @@ namespace FFXIV_Vibe_Plugin
                             if (ImGui.SliderFloat("###TRIGGER_FORM_STOP_AFTER", ref this.SelectedTrigger.StopAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER))
                             {
                                 this.SelectedTrigger.StopAfter = Helpers.ClampFloat(this.SelectedTrigger.StopAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER);
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.SameLine();
                             ImGui.SetNextItemWidth(45f);
                             if (ImGui.InputFloat("###TRIGGER_FORM_STOP_AFTER_INPUT", ref this.SelectedTrigger.StopAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER))
                             {
                                 this.SelectedTrigger.StopAfter = Helpers.ClampFloat(this.SelectedTrigger.StopAfter, (float)this.TRIGGER_MIN_AFTER, (float)this.TRIGGER_MAX_AFTER);
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.SameLine();
                             ImGuiComponents.HelpMarker("In seconds. Use zero to avoid stopping.");
@@ -688,16 +649,13 @@ namespace FFXIV_Vibe_Plugin
                             ImGui.TableNextColumn();
                             ImGui.Text("Priority");
                             ImGui.TableNextColumn();
-                            if (this.Premium != null && this.Premium.IsPremium())
-                            {
-                                if (ImGui.InputInt("###TRIGGER_FORM_PRIORITY", ref this.SelectedTrigger.Priority, 1))
-                                    this.Configuration.Save();
-                                ImGui.SameLine();
-                                ImGuiComponents.HelpMarker("If a trigger have a lower priority, it will be ignored.");
-                                ImGui.TableNextRow();
-                            }
-                            else
-                                ImGui.TextColored(ImGuiColors.DalamudGrey, this.PremiumFeatureText);
+
+                            if (ImGui.InputInt("###TRIGGER_FORM_PRIORITY", ref this.SelectedTrigger.Priority, 1))
+                                Service.Configuration!.Save();
+                            ImGui.SameLine();
+                            ImGuiComponents.HelpMarker("If a trigger have a lower priority, it will be ignored.");
+                            ImGui.TableNextRow();
+
                             ImGui.EndTable();
                         }
                         ImGui.Separator();
@@ -712,7 +670,7 @@ namespace FFXIV_Vibe_Plugin
                             if (ImGui.InputText("###TRIGGER_CHAT_TEXT", ref chatText, 250U))
                             {
                                 this.SelectedTrigger.ChatText = chatText.ToLower();
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGui.SameLine();
                             ImGuiComponents.HelpMarker("It is case insensitive. Also, you can use RegExp if you wish to.");
@@ -726,7 +684,7 @@ namespace FFXIV_Vibe_Plugin
                             {
                                 if (!this.SelectedTrigger.AllowedChatTypes.Contains(index5))
                                     this.SelectedTrigger.AllowedChatTypes.Add((int)(XivChatType)Enum.Parse(typeof(XivChatType), names[index5]));
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             ImGuiComponents.HelpMarker("Select some chats to observe or unselect all to watch every chats.");
                             ImGui.TableNextRow();
@@ -741,7 +699,7 @@ namespace FFXIV_Vibe_Plugin
                                     if (ImGuiComponents.IconButton(index6, (FontAwesomeIcon)61544))
                                     {
                                         this.SelectedTrigger.AllowedChatTypes.RemoveAt(index6);
-                                        this.Configuration.Save();
+                                        Service.Configuration!.Save();
                                     }
                                     ImGui.SameLine();
                                     ImGui.Text(((XivChatType)(int)(ushort)allowedChatType).ToString() ?? "");
@@ -765,14 +723,14 @@ namespace FFXIV_Vibe_Plugin
                                 {
                                     this.SelectedTrigger.ActionEffectType = actionEffectType;
                                     this.SelectedTrigger.Reset();
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 }
                                 ImGui.TableNextRow();
                                 ImGui.TableNextColumn();
                                 ImGui.Text("Spell Text:");
                                 ImGui.TableNextColumn();
                                 if (ImGui.InputText("###TRIGGER_FORM_SPELLNAME", ref this.SelectedTrigger.SpellText, 100U))
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 ImGui.SameLine();
                                 ImGuiComponents.HelpMarker("You can use RegExp.");
                                 ImGui.TableNextRow();
@@ -784,7 +742,7 @@ namespace FFXIV_Vibe_Plugin
                                 if (ImGui.Combo("###TRIGGER_FORM_DIRECTION", ref direction, names2, names2.Length))
                                 {
                                     this.SelectedTrigger.Direction = direction;
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 }
                                 ImGui.SameLine();
                                 ImGuiComponents.HelpMarker("Warning: Hitting no target will result to self as if you cast on yourself");
@@ -808,7 +766,7 @@ namespace FFXIV_Vibe_Plugin
                                 {
                                     this.SelectedTrigger.AmountMinValue = 0;
                                     this.SelectedTrigger.AmountMaxValue = 100;
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 }
                                 ImGui.TableNextColumn();
                                 ImGui.Text("Min " + str + " value:");
@@ -816,10 +774,10 @@ namespace FFXIV_Vibe_Plugin
                                 if (this.SelectedTrigger.AmountInPercentage)
                                 {
                                     if (ImGui.SliderInt("###TRIGGER_FORM_MIN_AMOUNT", ref this.SelectedTrigger.AmountMinValue, 0, 100))
-                                        this.Configuration.Save();
+                                        Service.Configuration!.Save();
                                 }
                                 else if (ImGui.InputInt("###TRIGGER_FORM_MIN_AMOUNT", ref this.SelectedTrigger.AmountMinValue, 100))
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 ImGui.TableNextRow();
                                 ImGui.TableNextColumn();
                                 ImGui.Text("Max " + str + " value:");
@@ -827,10 +785,10 @@ namespace FFXIV_Vibe_Plugin
                                 if (this.SelectedTrigger.AmountInPercentage)
                                 {
                                     if (ImGui.SliderInt("###TRIGGER_FORM_MAX_AMOUNT", ref this.SelectedTrigger.AmountMaxValue, 0, 100))
-                                        this.Configuration.Save();
+                                        Service.Configuration!.Save();
                                 }
                                 else if (ImGui.InputInt("###TRIGGER_FORM_MAX_AMOUNT", ref this.SelectedTrigger.AmountMaxValue, 100))
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 ImGui.TableNextRow();
                             }
                             ImGui.EndTable();
@@ -865,7 +823,7 @@ namespace FFXIV_Vibe_Plugin
                             {
                                 TriggerDevice triggerDevice = new TriggerDevice(visitedDevices[array1[this.TRIGGER_CURRENT_SELECTED_DEVICE]]);
                                 devices.Add(triggerDevice);
-                                this.Configuration.Save();
+                                Service.Configuration!.Save();
                             }
                             string[] array2 = this.Patterns.GetAllPatterns().Select<Pattern, string>((Func<Pattern, string>)(p => p.Name)).ToArray<string>();
                             for (int index7 = 0; index7 < devices.Count; ++index7)
@@ -885,7 +843,7 @@ namespace FFXIV_Vibe_Plugin
                                             if (ImGui.Checkbox(stringAndClear1 + "_SHOULD_VIBRATE", ref triggerDevice.ShouldVibrate))
                                             {
                                                 triggerDevice.ShouldStop = false;
-                                                this.Configuration.Save();
+                                                Service.Configuration!.Save();
                                             }
                                             ImGui.SameLine();
                                             ImGui.Text("Should Vibrate");
@@ -904,7 +862,7 @@ namespace FFXIV_Vibe_Plugin
                                                     interpolatedStringHandler.AppendLiteral("_SHOULD_VIBRATE_MOTOR_");
                                                     interpolatedStringHandler.AppendFormatted<int>(index8);
                                                     if (ImGui.Checkbox(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.VibrateSelectedMotors[index8]))
-                                                        this.Configuration.Save();
+                                                        Service.Configuration!.Save();
                                                     if (triggerDevice.VibrateSelectedMotors[index8])
                                                     {
                                                         ImGui.SameLine();
@@ -915,7 +873,7 @@ namespace FFXIV_Vibe_Plugin
                                                         interpolatedStringHandler.AppendLiteral("_VIBRATE_PATTERNS_");
                                                         interpolatedStringHandler.AppendFormatted<int>(index8);
                                                         if (ImGui.Combo(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.VibrateMotorsPattern[index8], array2, array2.Length))
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         int num = triggerDevice.VibrateMotorsPattern[index8];
                                                         ImGui.SameLine();
                                                         ImGui.SetNextItemWidth(180f);
@@ -928,7 +886,7 @@ namespace FFXIV_Vibe_Plugin
                                                         {
                                                             if (triggerDevice.VibrateMotorsThreshold[index8] > 0)
                                                                 triggerDevice.VibrateSelectedMotors[index8] = true;
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         }
                                                     }
                                                 }
@@ -940,7 +898,7 @@ namespace FFXIV_Vibe_Plugin
                                             if (ImGui.Checkbox(stringAndClear1 + "_SHOULD_ROTATE", ref triggerDevice.ShouldRotate))
                                             {
                                                 triggerDevice.ShouldStop = false;
-                                                this.Configuration.Save();
+                                                Service.Configuration!.Save();
                                             }
                                             ImGui.SameLine();
                                             ImGui.Text("Should Rotate");
@@ -959,7 +917,7 @@ namespace FFXIV_Vibe_Plugin
                                                     interpolatedStringHandler.AppendLiteral("_SHOULD_ROTATE_MOTOR_");
                                                     interpolatedStringHandler.AppendFormatted<int>(index9);
                                                     if (ImGui.Checkbox(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.RotateSelectedMotors[index9]))
-                                                        this.Configuration.Save();
+                                                        Service.Configuration!.Save();
                                                     if (triggerDevice.RotateSelectedMotors[index9])
                                                     {
                                                         ImGui.SameLine();
@@ -970,7 +928,7 @@ namespace FFXIV_Vibe_Plugin
                                                         interpolatedStringHandler.AppendLiteral("_ROTATE_PATTERNS_");
                                                         interpolatedStringHandler.AppendFormatted<int>(index9);
                                                         if (ImGui.Combo(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.RotateMotorsPattern[index9], array2, array2.Length))
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         int num = triggerDevice.RotateMotorsPattern[index9];
                                                         ImGui.SameLine();
                                                         ImGui.SetNextItemWidth(180f);
@@ -983,7 +941,7 @@ namespace FFXIV_Vibe_Plugin
                                                         {
                                                             if (triggerDevice.RotateMotorsThreshold[index9] > 0)
                                                                 triggerDevice.RotateSelectedMotors[index9] = true;
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         }
                                                     }
                                                 }
@@ -995,7 +953,7 @@ namespace FFXIV_Vibe_Plugin
                                             if (ImGui.Checkbox(stringAndClear1 + "_SHOULD_LINEAR", ref triggerDevice.ShouldLinear))
                                             {
                                                 triggerDevice.ShouldStop = false;
-                                                this.Configuration.Save();
+                                                Service.Configuration!.Save();
                                             }
                                             ImGui.SameLine();
                                             ImGui.Text("Should Linear");
@@ -1014,7 +972,7 @@ namespace FFXIV_Vibe_Plugin
                                                     interpolatedStringHandler.AppendLiteral("_SHOULD_LINEAR_MOTOR_");
                                                     interpolatedStringHandler.AppendFormatted<int>(index10);
                                                     if (ImGui.Checkbox(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.LinearSelectedMotors[index10]))
-                                                        this.Configuration.Save();
+                                                        Service.Configuration!.Save();
                                                     if (triggerDevice.LinearSelectedMotors[index10])
                                                     {
                                                         ImGui.SameLine();
@@ -1025,7 +983,7 @@ namespace FFXIV_Vibe_Plugin
                                                         interpolatedStringHandler.AppendLiteral("_LINEAR_PATTERNS_");
                                                         interpolatedStringHandler.AppendFormatted<int>(index10);
                                                         if (ImGui.Combo(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.LinearMotorsPattern[index10], array2, array2.Length))
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         int num = triggerDevice.LinearMotorsPattern[index10];
                                                         ImGui.SameLine();
                                                         ImGui.SetNextItemWidth(180f);
@@ -1038,7 +996,7 @@ namespace FFXIV_Vibe_Plugin
                                                         {
                                                             if (triggerDevice.LinearMotorsThreshold[index10] > 0)
                                                                 triggerDevice.LinearSelectedMotors[index10] = true;
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         }
                                                     }
                                                 }
@@ -1050,7 +1008,7 @@ namespace FFXIV_Vibe_Plugin
                                             if (ImGui.Checkbox(stringAndClear1 + "_SHOULD_OSCILLATE", ref triggerDevice.ShouldOscillate))
                                             {
                                                 triggerDevice.ShouldStop = false;
-                                                this.Configuration.Save();
+                                                Service.Configuration!.Save();
                                             }
                                             ImGui.SameLine();
                                             ImGui.Text("Should Oscillate");
@@ -1069,7 +1027,7 @@ namespace FFXIV_Vibe_Plugin
                                                     interpolatedStringHandler.AppendLiteral("_SHOULD_OSCILLATE_MOTOR_");
                                                     interpolatedStringHandler.AppendFormatted<int>(index11);
                                                     if (ImGui.Checkbox(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.OscillateSelectedMotors[index11]))
-                                                        this.Configuration.Save();
+                                                        Service.Configuration!.Save();
                                                     if (triggerDevice.OscillateSelectedMotors[index11])
                                                     {
                                                         ImGui.SameLine();
@@ -1080,7 +1038,7 @@ namespace FFXIV_Vibe_Plugin
                                                         interpolatedStringHandler.AppendLiteral("_OSCILLATE_PATTERNS_");
                                                         interpolatedStringHandler.AppendFormatted<int>(index11);
                                                         if (ImGui.Combo(interpolatedStringHandler.ToStringAndClear(), ref triggerDevice.OscillateMotorsPattern[index11], array2, array2.Length))
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         int num = triggerDevice.OscillateMotorsPattern[index11];
                                                         ImGui.SameLine();
                                                         ImGui.SetNextItemWidth(180f);
@@ -1093,7 +1051,7 @@ namespace FFXIV_Vibe_Plugin
                                                         {
                                                             if (triggerDevice.OscillateMotorsThreshold[index11] > 0)
                                                                 triggerDevice.OscillateSelectedMotors[index11] = true;
-                                                            this.Configuration.Save();
+                                                            Service.Configuration!.Save();
                                                         }
                                                     }
                                                 }
@@ -1103,13 +1061,12 @@ namespace FFXIV_Vibe_Plugin
                                         if (ImGui.Button("Remove###" + stringAndClear1 + "_REMOVE"))
                                         {
                                             devices.RemoveAt(index7);
-                                            Logger logger = this.Logger;
                                             interpolatedStringHandler = new DefaultInterpolatedStringHandler(16, 1);
                                             interpolatedStringHandler.AppendLiteral("DEBUG: removing ");
                                             interpolatedStringHandler.AppendFormatted<int>(index7);
                                             string stringAndClear2 = interpolatedStringHandler.ToStringAndClear();
-                                            logger.Log(stringAndClear2);
-                                            this.Configuration.Save();
+                                            Logger.Log(stringAndClear2);
+                                            Service.Configuration!.Save();
                                         }
                                     }
                                     ImGui.Indent(-10f);
@@ -1129,7 +1086,7 @@ namespace FFXIV_Vibe_Plugin
                         {
                             this.TriggerController.RemoveTrigger(this.SelectedTrigger);
                             this.SelectedTrigger = (Trigger)null;
-                            this.Configuration.Save();
+                            Service.Configuration!.Save();
                         }
                         this.triggersViewMode = "default";
                     }
@@ -1142,34 +1099,28 @@ namespace FFXIV_Vibe_Plugin
                 }
                 ImGui.EndChild();
             }
-            if (this.Premium != null && this.Premium.IsPremium() || triggers.Count < this.FreeAccount_MaxTriggers)
+
+            if (ImGui.Button("Add"))
             {
-                if (ImGui.Button("Add"))
+                int num = 0;
+                interpolatedStringHandler = new DefaultInterpolatedStringHandler(12, 1);
+                interpolatedStringHandler.AppendLiteral("New Trigger ");
+                interpolatedStringHandler.AppendFormatted<int>(num);
+                Trigger trigger;
+                for (trigger = new Trigger(interpolatedStringHandler.ToStringAndClear()); this.TriggerController.GetTriggers().Contains(trigger); trigger = new Trigger(interpolatedStringHandler.ToStringAndClear()))
                 {
-                    int num = 0;
+                    ++num;
                     interpolatedStringHandler = new DefaultInterpolatedStringHandler(12, 1);
                     interpolatedStringHandler.AppendLiteral("New Trigger ");
                     interpolatedStringHandler.AppendFormatted<int>(num);
-                    Trigger trigger;
-                    for (trigger = new Trigger(interpolatedStringHandler.ToStringAndClear()); this.TriggerController.GetTriggers().Contains(trigger); trigger = new Trigger(interpolatedStringHandler.ToStringAndClear()))
-                    {
-                        ++num;
-                        interpolatedStringHandler = new DefaultInterpolatedStringHandler(12, 1);
-                        interpolatedStringHandler.AppendLiteral("New Trigger ");
-                        interpolatedStringHandler.AppendFormatted<int>(num);
-                    }
-                    this.TriggerController.AddTrigger(trigger);
-                    this.SelectedTrigger = trigger;
-                    this.triggersViewMode = "edit";
-                    this.Configuration.Save();
                 }
-                ImGui.SameLine();
+                this.TriggerController.AddTrigger(trigger);
+                this.SelectedTrigger = trigger;
+                this.triggersViewMode = "edit";
+                Service.Configuration!.Save();
             }
-            else
-            {
-                ImGui.TextColored(ImGuiColors.DalamudRed, "To add more triggers you need a premium account");
-                ImGui.SameLine();
-            }
+            ImGui.SameLine();
+
             int num3 = ImGui.Button("Delete") ? 1 : 0;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Hold shift to avoid confirmation message");
@@ -1180,39 +1131,35 @@ namespace FFXIV_Vibe_Plugin
                 {
                     this.TriggerController.RemoveTrigger(this.SelectedTrigger);
                     this.SelectedTrigger = (Trigger)null;
-                    this.Configuration.Save();
+                    Service.Configuration!.Save();
                 }
                 this.triggersViewMode = "delete";
             }
             ImGui.SameLine();
-            if (this.Premium != null && this.Premium.IsPremium())
+
+            if (ImGui.Button("Import Triggers"))
             {
-                if (ImGui.Button("Import Triggers"))
+                if (!this.ConfigurationProfile.EXPORT_DIR.Equals(""))
                 {
-                    if (!this.ConfigurationProfile.EXPORT_DIR.Equals(""))
+                    try
                     {
-                        try
+                        foreach (string file in Directory.GetFiles(this.ConfigurationProfile.EXPORT_DIR))
                         {
-                            foreach (string file in Directory.GetFiles(this.ConfigurationProfile.EXPORT_DIR))
-                            {
-                                Trigger trigger = JsonConvert.DeserializeObject<Trigger>(File.ReadAllText(file));
-                                this.TriggerController.RemoveTrigger(trigger);
-                                this.TriggerController.AddTrigger(trigger);
-                            }
-                        }
-                        catch
-                        {
+                            Trigger trigger = JsonConvert.DeserializeObject<Trigger>(File.ReadAllText(file));
+                            this.TriggerController.RemoveTrigger(trigger);
+                            this.TriggerController.AddTrigger(trigger);
                         }
                     }
+                    catch
+                    {
+                    }
                 }
-                ImGui.SameLine();
-                if (!ImGui.Button("Export All") || this.ConfigurationProfile.EXPORT_DIR.Equals(""))
-                    return;
-                foreach (Trigger trigger in this.TriggerController.GetTriggers())
-                    this.export_trigger(trigger);
             }
-            else
-                ImGui.TextColored(ImGuiColors.DalamudGrey2, "Import/Export is a " + this.PremiumFeatureText.ToLower());
+            ImGui.SameLine();
+            if (!ImGui.Button("Export All") || this.ConfigurationProfile.EXPORT_DIR.Equals(""))
+                return;
+            foreach (Trigger trigger in this.TriggerController.GetTriggers())
+                this.export_trigger(trigger);
         }
 
         public void DrawPatternsTab()
@@ -1239,7 +1186,7 @@ namespace FFXIV_Vibe_Plugin
                 if (ImGui.InputText("###PATTERNS_CURRENT_PATTERN_VALUE_TO_ADD", ref this._tmp_currentPatternValueToAdd, 500U))
                 {
                     this._tmp_currentPatternValueToAdd = this._tmp_currentPatternValueToAdd.Trim();
-                    this._tmp_currentPatternValueState = !(this._tmp_currentPatternValueToAdd.Trim() == "") ? (Helpers.RegExpMatch(this.Logger, this._tmp_currentPatternValueToAdd, this.VALID_REGEXP_PATTERN) ? "valid" : "unvalid") : "unset";
+                    this._tmp_currentPatternValueState = !(this._tmp_currentPatternValueToAdd.Trim() == "") ? (Helpers.RegExpMatch(this._tmp_currentPatternValueToAdd, this.VALID_REGEXP_PATTERN) ? "valid" : "unvalid") : "unset";
                 }
                 ImGui.TableNextColumn();
                 ImGuiComponents.HelpMarker("Example: 50:1000|100:2000 means 50% for 1000 milliseconds followed by 100% for 2000 milliseconds.");
@@ -1250,7 +1197,7 @@ namespace FFXIV_Vibe_Plugin
                     {
                         this.Patterns.AddCustomPattern(new Pattern(this._tmp_currentPatternNameToAdd, this._tmp_currentPatternValueToAdd));
                         this.ConfigurationProfile.PatternList = this.Patterns.GetCustomPatterns();
-                        this.Configuration.Save();
+                        Service.Configuration!.Save();
                         this._tmp_currentPatternNameToAdd = "";
                         this._tmp_currentPatternValueToAdd = "";
                         this._tmp_currentPatternValueState = "unset";
@@ -1292,7 +1239,7 @@ namespace FFXIV_Vibe_Plugin
                     for (int index = 0; index < customPatterns.Count; ++index)
                     {
                         Pattern pattern = customPatterns[index];
-                        if (Helpers.RegExpMatch(this.Logger, pattern.Name, this.CURRENT_PATTERN_SEARCHBAR))
+                        if (Helpers.RegExpMatch(pattern.Name, this.CURRENT_PATTERN_SEARCHBAR))
                         {
                             ImGui.TableNextColumn();
                             ImGui.Text(pattern.Name ?? "");
@@ -1310,12 +1257,12 @@ namespace FFXIV_Vibe_Plugin
                             {
                                 if (!this.Patterns.RemoveCustomPattern(pattern))
                                 {
-                                    this.Logger.Error("Could not remove pattern " + pattern.Name);
+                                    Logger.Error("Could not remove pattern " + pattern.Name);
                                 }
                                 else
                                 {
                                     this.ConfigurationProfile.PatternList = this.Patterns.GetCustomPatterns();
-                                    this.Configuration.Save();
+                                    Service.Configuration!.Save();
                                 }
                             }
                             ImGui.SameLine();
@@ -1336,7 +1283,7 @@ namespace FFXIV_Vibe_Plugin
 
         public void DrawHelpTab()
         {
-            ImGui.TextWrapped(Main.GetHelp(this.app.CommandName));
+            ImGui.TextWrapped(Main.GetHelp(Service.App.CommandName));
             ImGui.TextColored(ImGuiColors.DalamudViolet, "Plugin information");
             DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(13, 1);
             interpolatedStringHandler.AppendLiteral("App version: ");
@@ -1344,7 +1291,7 @@ namespace FFXIV_Vibe_Plugin
             ImGui.Text(interpolatedStringHandler.ToStringAndClear());
             interpolatedStringHandler = new DefaultInterpolatedStringHandler(16, 1);
             interpolatedStringHandler.AppendLiteral("Config version: ");
-            interpolatedStringHandler.AppendFormatted<int>(this.Configuration.Version);
+            interpolatedStringHandler.AppendFormatted<int>(Service.Configuration!.Version);
             ImGui.Text(interpolatedStringHandler.ToStringAndClear());
             ImGui.TextColored(ImGuiColors.DalamudViolet, "Pattern information");
             ImGui.TextWrapped("You should use a string separated by the | (pipe) symbol with a pair of <Intensity> and <Duration in milliseconds>.");

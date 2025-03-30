@@ -1,144 +1,107 @@
-using Dalamud.Logging;
-using Dalamud.Plugin.Services;
+using FFXIV_Vibe_Plugin.App;
 using System;
-using System.Runtime.CompilerServices;
 
-#nullable enable
-namespace FFXIV_Vibe_Plugin.Commons
+namespace FFXIV_Vibe_Plugin.Commons;
+
+public static class Logger
 {
-    public class Logger
+    private static readonly string name = "";
+    private static readonly Logger.LogLevel log_level = Logger.LogLevel.DEBUG;
+    private static readonly string prefix = ">";
+
+    public static void Chat(string msg)
     {
-        private readonly IChatGui? DalamudChatGui;
-        private readonly string name = "";
-        private readonly Logger.LogLevel log_level = Logger.LogLevel.DEBUG;
-        private readonly string prefix = ">";
+        Service.DalamudChat.Print(FormatMessage(Logger.LogLevel.LOG, msg), null, new ushort?());
+    }
 
-        public Logger(IChatGui? DalamudChatGui, string name, Logger.LogLevel log_level)
-        {
-            this.DalamudChatGui = DalamudChatGui;
-            this.name = name;
-            this.log_level = log_level;
-        }
+    public static void ChatError(string msg)
+    {
+        Service.DalamudChat.PrintError(FormatMessage(Logger.LogLevel.ERROR, msg), null, new ushort?());
+        Error(msg);
+    }
 
-        public void Chat(string msg)
-        {
-            if (this.DalamudChatGui != null)
-                this.DalamudChatGui.Print(this.FormatMessage(Logger.LogLevel.LOG, msg), (string)null, new ushort?());
-            /*else
-                PluginLog.LogError("No gui chat", Array.Empty<object>());*/
-        }
+    public static void ChatError(string msg, Exception e)
+    {
+        string msg1 = FormatMessage(Logger.LogLevel.ERROR, msg, e);
+        Service.DalamudChat.PrintError(msg1, null, new ushort?());
+        Error(msg1);
+    }
 
-        public void ChatError(string msg)
-        {
-            this.DalamudChatGui?.PrintError(this.FormatMessage(Logger.LogLevel.ERROR, msg), (string)null, new ushort?());
-            this.Error(msg);
-        }
+    public static void Verbose(string msg)
+    {
+        if (log_level > Logger.LogLevel.VERBOSE)
+            return;
+        // PluginLog.LogVerbose(this.FormatMessage(Logger.LogLevel.VERBOSE, msg), Array.Empty<object>());
+    }
 
-        public void ChatError(string msg, Exception e)
-        {
-            string msg1 = this.FormatMessage(Logger.LogLevel.ERROR, msg, e);
-            this.DalamudChatGui?.PrintError(msg1, (string)null, new ushort?());
-            this.Error(msg1);
-        }
+    public static void Debug(string msg)
+    {
+        if (log_level > Logger.LogLevel.DEBUG)
+            return;
+        // PluginLog.LogDebug(this.FormatMessage(Logger.LogLevel.DEBUG, msg), Array.Empty<object>());
+    }
 
-        public void Verbose(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.VERBOSE)
-                return;
-            // PluginLog.LogVerbose(this.FormatMessage(Logger.LogLevel.VERBOSE, msg), Array.Empty<object>());
-        }
+    public static void Log(string msg)
+    {
+        if (log_level > Logger.LogLevel.LOG)
+            return;
+        // PluginLog.Log(this.FormatMessage(Logger.LogLevel.LOG, msg), Array.Empty<object>());
+    }
 
-        public void Debug(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.DEBUG)
-                return;
-            // PluginLog.LogDebug(this.FormatMessage(Logger.LogLevel.DEBUG, msg), Array.Empty<object>());
-        }
+    public static void Info(string msg)
+    {
+        if (log_level > Logger.LogLevel.INFO)
+            return;
+        // PluginLog.Information(this.FormatMessage(Logger.LogLevel.INFO, msg), Array.Empty<object>());
+    }
 
-        public void Log(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.LOG)
-                return;
-            // PluginLog.Log(this.FormatMessage(Logger.LogLevel.LOG, msg), Array.Empty<object>());
-        }
+    public static void Warn(string msg)
+    {
+        if (log_level > Logger.LogLevel.WARN)
+            return;
+        // PluginLog.Warning(this.FormatMessage(Logger.LogLevel.WARN, msg), Array.Empty<object>());
+    }
 
-        public void Info(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.INFO)
-                return;
-            // PluginLog.Information(this.FormatMessage(Logger.LogLevel.INFO, msg), Array.Empty<object>());
-        }
+    public static void Error(string msg)
+    {
+        if (log_level > Logger.LogLevel.ERROR)
+            return;
+        // PluginLog.Error(this.FormatMessage(Logger.LogLevel.ERROR, msg), Array.Empty<object>());
+    }
 
-        public void Warn(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.WARN)
-                return;
-            // PluginLog.Warning(this.FormatMessage(Logger.LogLevel.WARN, msg), Array.Empty<object>());
-        }
+    public static void Error(string msg, Exception e)
+    {
+        if (log_level > Logger.LogLevel.ERROR)
+            return;
+        // PluginLog.Error(this.FormatMessage(Logger.LogLevel.ERROR, msg, e), Array.Empty<object>());
+    }
 
-        public void Error(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.ERROR)
-                return;
-            // PluginLog.Error(this.FormatMessage(Logger.LogLevel.ERROR, msg), Array.Empty<object>());
-        }
+    public static void Fatal(string msg)
+    {
+        if (log_level > Logger.LogLevel.FATAL)
+            return;
+        // PluginLog.Fatal(this.FormatMessage(Logger.LogLevel.FATAL, msg), Array.Empty<object>());
+    }
 
-        public void Error(string msg, Exception e)
-        {
-            if (this.log_level > Logger.LogLevel.ERROR)
-                return;
-            // PluginLog.Error(this.FormatMessage(Logger.LogLevel.ERROR, msg, e), Array.Empty<object>());
-        }
+    public static void Fatal(string msg, Exception e)
+    {
+        if (log_level > Logger.LogLevel.FATAL)
+            return;
+        // PluginLog.Fatal(this.FormatMessage(Logger.LogLevel.FATAL, msg, e), Array.Empty<object>());
+    }
 
-        public void Fatal(string msg)
-        {
-            if (this.log_level > Logger.LogLevel.FATAL)
-                return;
-            // PluginLog.Fatal(this.FormatMessage(Logger.LogLevel.FATAL, msg), Array.Empty<object>());
-        }
+    private static string FormatMessage(Logger.LogLevel type, string msg) => $"{(name != "" ? name + " " : "")}{type} {prefix} {msg}";
 
-        public void Fatal(string msg, Exception e)
-        {
-            if (this.log_level > Logger.LogLevel.FATAL)
-                return;
-            // PluginLog.Fatal(this.FormatMessage(Logger.LogLevel.FATAL, msg, e), Array.Empty<object>());
-        }
+    private static string FormatMessage(Logger.LogLevel type, string msg, Exception e) => $"{(name != "" ? name + " " : "")}{type} {prefix} {e.Message}\\n{msg}";
 
-        private string FormatMessage(Logger.LogLevel type, string msg)
-        {
-            DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(2, 4);
-            interpolatedStringHandler.AppendFormatted(this.name != "" ? this.name + " " : "");
-            interpolatedStringHandler.AppendFormatted<Logger.LogLevel>(type);
-            interpolatedStringHandler.AppendLiteral(" ");
-            interpolatedStringHandler.AppendFormatted(this.prefix);
-            interpolatedStringHandler.AppendLiteral(" ");
-            interpolatedStringHandler.AppendFormatted(msg);
-            return interpolatedStringHandler.ToStringAndClear();
-        }
-
-        private string FormatMessage(Logger.LogLevel type, string msg, Exception e)
-        {
-            DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(4, 5);
-            interpolatedStringHandler.AppendFormatted(this.name != "" ? this.name + " " : "");
-            interpolatedStringHandler.AppendFormatted<Logger.LogLevel>(type);
-            interpolatedStringHandler.AppendLiteral(" ");
-            interpolatedStringHandler.AppendFormatted(this.prefix);
-            interpolatedStringHandler.AppendLiteral(" ");
-            interpolatedStringHandler.AppendFormatted(e.Message);
-            interpolatedStringHandler.AppendLiteral("\\n");
-            interpolatedStringHandler.AppendFormatted(msg);
-            return interpolatedStringHandler.ToStringAndClear();
-        }
-
-        public enum LogLevel
-        {
-            VERBOSE,
-            DEBUG,
-            LOG,
-            INFO,
-            WARN,
-            ERROR,
-            FATAL,
-        }
+    public enum LogLevel
+    {
+        VERBOSE,
+        DEBUG,
+        LOG,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL,
     }
 }

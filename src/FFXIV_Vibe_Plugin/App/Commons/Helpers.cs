@@ -28,7 +28,7 @@ namespace FFXIV_Vibe_Plugin.Commons
             return (int)((double)intensity / (100.0 / (double)threshold));
         }
 
-        public static bool RegExpMatch(Logger Logger, string text, string regexp)
+        public static bool RegExpMatch(string text, string regexp)
         {
             bool flag = false;
             if (regexp.Trim() == "")

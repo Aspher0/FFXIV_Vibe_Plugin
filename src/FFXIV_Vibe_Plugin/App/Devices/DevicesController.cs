@@ -1,5 +1,4 @@
 using Buttplug.Client;
-using Buttplug.Client.Connectors.WebsocketConnector;
 using FFXIV_Vibe_Plugin.App;
 using FFXIV_Vibe_Plugin.Commons;
 using FFXIV_Vibe_Plugin.Triggers;
@@ -7,15 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using vtortola.WebSockets.Http;
 
 #nullable enable
 namespace FFXIV_Vibe_Plugin.Device
 {
     public class DevicesController
     {
-        private readonly Logger Logger;
-        private readonly Configuration Configuration;
         private ConfigurationProfile Profile;
         private readonly Patterns Patterns;
         private Trigger? CurrentPlayingTrigger;
@@ -28,21 +24,17 @@ namespace FFXIV_Vibe_Plugin.Device
         private static readonly Mutex mut = new Mutex();
 
         public DevicesController(
-          Logger logger,
-          Configuration configuration,
           ConfigurationProfile profile,
           Patterns patterns)
         {
-            this.Logger = logger;
-            this.Configuration = configuration;
-            this.Profile = profile;
-            this.Patterns = patterns;
+            Profile = profile;
+            Patterns = patterns;
         }
 
         public void Dispose()
         {
-            this.shouldExit = true;
-            this.Disconnect();
+            shouldExit = true;
+            Disconnect();
         }
 
         public void SetProfile(ConfigurationProfile profile) => this.Profile = profile;
@@ -51,14 +43,14 @@ namespace FFXIV_Vibe_Plugin.Device
         {
             DevicesController devicesController = this;
             Thread.Sleep(2000);
-            devicesController.Logger.Log("Connecting to Intiface...");
+            Logger.Log("Connecting to Intiface...");
             devicesController.isConnected = false;
             devicesController.shouldExit = false;
             devicesController.BPClient = new ButtplugClient("FFXIV_Vibe_Plugin");
             string str1 = host;
             if (port > 0)
                 str1 = str1 + ":" + port.ToString();
-            ButtplugWebsocketConnector connector = (ButtplugWebsocketConnector)null;
+            ButtplugWebsocketConnector connector = null;
             try
             {
                 string str2 = "ws";
@@ -68,7 +60,7 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                devicesController.Logger.Error("DeviceController.Connect: ButtplugWebsocketConnector error: " + ex.Message);
+                Logger.Error("DeviceController.Connect: ButtplugWebsocketConnector error: " + ex.Message);
             }
             devicesController.BPClient.DeviceAdded += new EventHandler<DeviceAddedEventArgs>(devicesController.BPClient_DeviceAdded);
             devicesController.BPClient.DeviceRemoved += new EventHandler<DeviceRemovedEventArgs>(devicesController.BPClient_DeviceRemoved);
@@ -78,15 +70,15 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                devicesController.Logger.Warn("Can't connect, exiting!");
-                devicesController.Logger.Warn("Message: " + ex.InnerException?.Message);
+                Logger.Warn("Can't connect, exiting!");
+                Logger.Warn("Message: " + ex.InnerException?.Message);
                 return;
             }
             devicesController.isConnected = true;
-            devicesController.Logger.Log("Connected!");
+            Logger.Log("Connected!");
             try
             {
-                devicesController.Logger.Log("Fast scanning!");
+                Logger.Log("Fast scanning!");
                 devicesController.ScanDevice();
                 Thread.Sleep(1000);
                 devicesController.StopScanningDevice();
@@ -94,111 +86,107 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                devicesController.Logger.Error("DeviceController fast scanning: " + ex.Message);
+                Logger.Error("DeviceController fast scanning: " + ex.Message);
             }
-            devicesController.Logger.Log("Scanning done!");
+            Logger.Log("Scanning done!");
             devicesController.StartBatteryUpdaterThread();
         }
 
         private void BPClient_ServerDisconnected(object? sender, EventArgs e)
         {
-            this.Logger.Debug("Server disconnected");
-            this.Disconnect();
+            Logger.Debug("Server disconnected");
+            Disconnect();
         }
 
         public bool IsConnected()
         {
-            this.refreshIsConnected();
-            return this.isConnected;
+            refreshIsConnected();
+            return isConnected;
         }
 
         public void refreshIsConnected()
         {
-            if (this.BPClient == null)
+            if (BPClient == null)
                 return;
-            this.isConnected = this.BPClient.Connected;
+
+            isConnected = BPClient.Connected;
         }
 
         public async void ScanDevice()
         {
-            if (this.BPClient == null)
+            if (BPClient == null)
                 return;
-            this.Logger.Debug("Scanning for devices...");
-            if (!this.IsConnected())
+
+            Logger.Debug("Scanning for devices...");
+
+            if (!IsConnected())
                 return;
+
             try
             {
-                this.isScanning = true;
-                await this.BPClient.StartScanningAsync();
+                isScanning = true;
+                await BPClient.StartScanningAsync();
             }
             catch (Exception ex)
             {
-                this.isScanning = false;
-                this.Logger.Error("Scanning issue. No 'Device Comm Managers' enabled on Intiface?");
-                this.Logger.Error(ex.Message);
+                isScanning = false;
+                Logger.Error("Scanning issue. No 'Device Comm Managers' enabled on Intiface?");
+                Logger.Error(ex.Message);
             }
         }
 
-        public bool IsScanning() => this.isScanning;
+        public bool IsScanning() => isScanning;
 
         public async void StopScanningDevice()
         {
-            if (this.BPClient != null)
+            if (BPClient != null)
             {
-                if (this.IsConnected())
+                if (IsConnected())
                 {
                     try
                     {
-                        this.Logger.Debug("Sending stop scanning command!");
-                        this.BPClient.StopScanningAsync();
+                        Logger.Debug("Sending stop scanning command!");
+                        BPClient.StopScanningAsync();
                     }
                     catch (Exception ex)
                     {
-                        this.Logger.Debug("StopScanningDevice ignored: already stopped");
+                        Logger.Debug("StopScanningDevice ignored: already stopped");
                     }
                 }
             }
-            this.isScanning = false;
+
+            isScanning = false;
         }
 
         private void BPClient_OnScanComplete(object? sender, EventArgs e)
         {
-            this.Logger.Debug("Stop scanning...");
-            this.isScanning = false;
+            Logger.Debug("Stop scanning...");
+            isScanning = false;
         }
 
         private void BPClient_DeviceAdded(object? sender, DeviceAddedEventArgs arg)
         {
             try
             {
-                DevicesController.mut.WaitOne();
-                FFXIV_Vibe_Plugin.Device.Device device = new FFXIV_Vibe_Plugin.Device.Device(arg.Device, this.Logger);
+                mut.WaitOne();
+
+                Device device = new Device(arg.Device);
+
                 device.IsConnected = true;
                 this.Devices.Add(device);
                 DefaultInterpolatedStringHandler interpolatedStringHandler;
                 if (!this.Profile.VISITED_DEVICES.ContainsKey(device.Name))
                 {
                     this.Profile.VISITED_DEVICES[device.Name] = device;
-                    this.Configuration.Save();
-                    Logger logger = this.Logger;
-                    interpolatedStringHandler = new DefaultInterpolatedStringHandler(31, 1);
-                    interpolatedStringHandler.AppendLiteral("Adding device to visited list ");
-                    interpolatedStringHandler.AppendFormatted<FFXIV_Vibe_Plugin.Device.Device>(device);
-                    interpolatedStringHandler.AppendLiteral(")");
-                    string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                    logger.Debug(stringAndClear);
+                    Service.Configuration!.Save();
+                    Logger.Debug($"Adding device to visited list {device})");
                 }
-                Logger logger1 = this.Logger;
-                interpolatedStringHandler = new DefaultInterpolatedStringHandler(7, 1);
-                interpolatedStringHandler.AppendLiteral("Added ");
-                interpolatedStringHandler.AppendFormatted<FFXIV_Vibe_Plugin.Device.Device>(device);
-                interpolatedStringHandler.AppendLiteral(")");
-                string stringAndClear1 = interpolatedStringHandler.ToStringAndClear();
-                logger1.Debug(stringAndClear1);
+
+                Logger.Debug($"Added {device})");
             }
             catch (Exception ex)
             {
-                this.Logger.Error("DeviceController.BPClient_DeviceAdded: " + ex.Message);
+                Logger.Error("DeviceController.BPClient_DeviceAdded: " + ex.Message);
             }
             finally
             {
@@ -214,19 +202,19 @@ namespace FFXIV_Vibe_Plugin.Device
                 int index = this.Devices.FindIndex((Predicate<FFXIV_Vibe_Plugin.Device.Device>)(device => (long)device.Id == (long)arg.Device.Index));
                 if (index <= -1)
                     return;
-                Logger logger = this.Logger;
+                
                 DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(8, 1);
                 interpolatedStringHandler.AppendLiteral("Removed ");
                 interpolatedStringHandler.AppendFormatted<FFXIV_Vibe_Plugin.Device.Device>(this.Devices[index]);
                 string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                logger.Debug(stringAndClear);
+                Logger.Debug(stringAndClear);
                 FFXIV_Vibe_Plugin.Device.Device device1 = this.Devices[index];
                 this.Devices.RemoveAt(index);
                 device1.IsConnected = false;
             }
             catch (Exception ex)
             {
-                this.Logger.Error("DeviceController.BPClient_DeviceRemoved: " + ex.Message);
+                Logger.Error("DeviceController.BPClient_DeviceRemoved: " + ex.Message);
             }
             finally
             {
@@ -236,14 +224,14 @@ namespace FFXIV_Vibe_Plugin.Device
 
         public async void Disconnect()
         {
-            this.Logger.Debug("Disconnecting DeviceController");
+            Logger.Debug("Disconnecting DeviceController");
             try
             {
                 this.Devices.Clear();
             }
             catch (Exception ex)
             {
-                this.Logger.Error("DeviceController.Disconnect: " + ex.Message);
+                Logger.Error("DeviceController.Disconnect: " + ex.Message);
             }
             if (this.BPClient == null)
                 return;
@@ -255,21 +243,21 @@ namespace FFXIV_Vibe_Plugin.Device
                 if (this.BPClient != null)
                 {
                     await this.BPClient.DisconnectAsync();
-                    this.Logger.Log("Disconnecting! Bye... Waiting 2sec...");
+                    Logger.Log("Disconnecting! Bye... Waiting 2sec...");
                 }
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Error while disconnecting client", ex);
+                Logger.Error("Error while disconnecting client", ex);
             }
             try
             {
-                this.Logger.Debug("Disposing BPClient.");
+                Logger.Debug("Disposing BPClient.");
                 this.BPClient.Dispose();
             }
             catch (Exception ex)
             {
-                this.Logger.Error("Error while disposing BPClient", ex);
+                Logger.Error("Error while disposing BPClient", ex);
             }
             this.BPClient = (ButtplugClient)null;
             this.isConnected = false;
@@ -291,7 +279,7 @@ namespace FFXIV_Vibe_Plugin.Device
                     Thread.Sleep(5000);
                     if (this.IsConnected())
                     {
-                        this.Logger.Verbose("Updating battery levels!");
+                        Logger.Verbose("Updating battery levels!");
                         this.UpdateAllBatteryLevel();
                     }
                 }
@@ -310,7 +298,7 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                this.Logger.Error("DeviceController.UpdateAllBatteryLevel: " + ex.Message);
+                Logger.Error("DeviceController.UpdateAllBatteryLevel: " + ex.Message);
             }
         }
 
@@ -324,7 +312,7 @@ namespace FFXIV_Vibe_Plugin.Device
                 }
                 catch (Exception ex)
                 {
-                    this.Logger.Error("DeviceContoller.StopAll: " + ex.Message);
+                    Logger.Error("DeviceContoller.StopAll: " + ex.Message);
                 }
             }
         }
@@ -333,16 +321,16 @@ namespace FFXIV_Vibe_Plugin.Device
         {
             if (!this.IsConnected())
             {
-                Logger logger = this.Logger;
+                
                 DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(28, 1);
                 interpolatedStringHandler.AppendLiteral("Not connected, cannot send $");
                 interpolatedStringHandler.AppendFormatted<Trigger>(trigger);
                 string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                logger.Debug(stringAndClear);
+                Logger.Debug(stringAndClear);
             }
             else
             {
-                Logger logger1 = this.Logger;
+                
                 DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(28, 2);
                 interpolatedStringHandler.AppendLiteral("Sending trigger ");
                 interpolatedStringHandler.AppendFormatted<Trigger>(trigger);
@@ -350,19 +338,19 @@ namespace FFXIV_Vibe_Plugin.Device
                 interpolatedStringHandler.AppendFormatted<int>(trigger.Priority);
                 interpolatedStringHandler.AppendLiteral(")");
                 string stringAndClear1 = interpolatedStringHandler.ToStringAndClear();
-                logger1.Debug(stringAndClear1);
+                Logger.Debug(stringAndClear1);
                 if (this.CurrentPlayingTrigger == null)
                     this.CurrentPlayingTrigger = trigger;
                 if (trigger.Priority < this.CurrentPlayingTrigger.Priority)
                 {
-                    Logger logger2 = this.Logger;
+                    
                     interpolatedStringHandler = new DefaultInterpolatedStringHandler(46, 2);
                     interpolatedStringHandler.AppendLiteral("Ignoring trigger because lower priority => ");
                     interpolatedStringHandler.AppendFormatted<Trigger>(trigger);
                     interpolatedStringHandler.AppendLiteral(" < ");
                     interpolatedStringHandler.AppendFormatted<Trigger>(this.CurrentPlayingTrigger);
                     string stringAndClear2 = interpolatedStringHandler.ToStringAndClear();
-                    logger2.Debug(stringAndClear2);
+                    Logger.Debug(stringAndClear2);
                 }
                 else
                 {
@@ -392,7 +380,7 @@ namespace FFXIV_Vibe_Plugin.Device
                                             float stopAfter = trigger.StopAfter;
                                             if (num2 != 0)
                                             {
-                                                Logger logger3 = this.Logger;
+                                                
                                                 interpolatedStringHandler = new DefaultInterpolatedStringHandler(58, 4);
                                                 interpolatedStringHandler.AppendLiteral("Sending ");
                                                 interpolatedStringHandler.AppendFormatted(device2.Name);
@@ -404,7 +392,7 @@ namespace FFXIV_Vibe_Plugin.Device
                                                 interpolatedStringHandler.AppendFormatted<int>(threshold1);
                                                 interpolatedStringHandler.AppendLiteral("!");
                                                 string stringAndClear3 = interpolatedStringHandler.ToStringAndClear();
-                                                logger3.Debug(stringAndClear3);
+                                                Logger.Debug(stringAndClear3);
                                                 this.Send("vibrate", device2, threshold1, motorId, patternId, startAfter, stopAfter);
                                             }
                                         }
@@ -433,7 +421,7 @@ namespace FFXIV_Vibe_Plugin.Device
                                             float stopAfter = trigger.StopAfter;
                                             if (num4 != 0)
                                             {
-                                                Logger logger4 = this.Logger;
+                                                
                                                 interpolatedStringHandler = new DefaultInterpolatedStringHandler(57, 4);
                                                 interpolatedStringHandler.AppendLiteral("Sending ");
                                                 interpolatedStringHandler.AppendFormatted(device2.Name);
@@ -445,7 +433,7 @@ namespace FFXIV_Vibe_Plugin.Device
                                                 interpolatedStringHandler.AppendFormatted<int>(threshold2);
                                                 interpolatedStringHandler.AppendLiteral("!");
                                                 string stringAndClear4 = interpolatedStringHandler.ToStringAndClear();
-                                                logger4.Debug(stringAndClear4);
+                                                Logger.Debug(stringAndClear4);
                                                 this.Send("rotate", device2, threshold2, motorId, patternId, startAfter, stopAfter);
                                             }
                                         }
@@ -474,7 +462,6 @@ namespace FFXIV_Vibe_Plugin.Device
                                             float stopAfter = trigger.StopAfter;
                                             if (num6 != 0)
                                             {
-                                                Logger logger5 = this.Logger;
                                                 interpolatedStringHandler = new DefaultInterpolatedStringHandler(55, 4);
                                                 interpolatedStringHandler.AppendLiteral("Sending ");
                                                 interpolatedStringHandler.AppendFormatted(device2.Name);
@@ -486,7 +473,7 @@ namespace FFXIV_Vibe_Plugin.Device
                                                 interpolatedStringHandler.AppendFormatted<int>(threshold3);
                                                 interpolatedStringHandler.AppendLiteral("!");
                                                 string stringAndClear5 = interpolatedStringHandler.ToStringAndClear();
-                                                logger5.Debug(stringAndClear5);
+                                                Logger.Debug(stringAndClear5);
                                                 this.Send("linear", device2, threshold3, motorId, patternId, startAfter, stopAfter);
                                             }
                                         }
@@ -515,7 +502,6 @@ namespace FFXIV_Vibe_Plugin.Device
                                             float stopAfter = trigger.StopAfter;
                                             if (num8 != 0)
                                             {
-                                                Logger logger6 = this.Logger;
                                                 interpolatedStringHandler = new DefaultInterpolatedStringHandler(58, 4);
                                                 interpolatedStringHandler.AppendLiteral("Sending ");
                                                 interpolatedStringHandler.AppendFormatted(device2.Name);
@@ -527,7 +513,7 @@ namespace FFXIV_Vibe_Plugin.Device
                                                 interpolatedStringHandler.AppendFormatted<int>(threshold4);
                                                 interpolatedStringHandler.AppendLiteral("!");
                                                 string stringAndClear6 = interpolatedStringHandler.ToStringAndClear();
-                                                logger6.Debug(stringAndClear6);
+                                                Logger.Debug(stringAndClear6);
                                                 this.Send("oscillate", device2, threshold4, motorId, patternId, startAfter, stopAfter);
                                             }
                                         }
@@ -539,7 +525,7 @@ namespace FFXIV_Vibe_Plugin.Device
                             }
                             if (device1.ShouldStop)
                             {
-                                this.Logger.Debug("Sending stop to " + device2.Name + "!");
+                                Logger.Debug("Sending stop to " + device2.Name + "!");
                                 DevicesController.SendStop(device2);
                             }
                         }
@@ -561,7 +547,7 @@ namespace FFXIV_Vibe_Plugin.Device
             }
             catch (Exception ex)
             {
-                this.Logger.Error(ex.ToString());
+                Logger.Error(ex.ToString());
             }
             return device1;
         }
@@ -596,7 +582,7 @@ namespace FFXIV_Vibe_Plugin.Device
             this.SaveCurrentMotorAndDevicePlayingState(device, motorId);
             Pattern patternById = this.Patterns.GetPatternById(patternId);
             string[] patternSegments = patternById.Value.Split("|");
-            Logger logger1 = this.Logger;
+            
             interpolatedStringHandler1 = new DefaultInterpolatedStringHandler(80, 8);
             interpolatedStringHandler1.AppendLiteral("SendPattern '");
             interpolatedStringHandler1.AppendFormatted(command);
@@ -615,7 +601,7 @@ namespace FFXIV_Vibe_Plugin.Device
             interpolatedStringHandler1.AppendLiteral(" threshold=");
             interpolatedStringHandler1.AppendFormatted<int>(threshold);
             string stringAndClear1 = interpolatedStringHandler1.ToStringAndClear();
-            logger1.Log(stringAndClear1);
+            Logger.Log(stringAndClear1);
             int startedUnixTime = this.CurrentDeviceAndMotorPlaying[deviceAndMotorId];
             bool forceStop = false;
             new Thread((ThreadStart)(() =>
@@ -626,14 +612,13 @@ namespace FFXIV_Vibe_Plugin.Device
                 if (startedUnixTime != this.CurrentDeviceAndMotorPlaying[deviceAndMotorId])
                     return;
                 forceStop = true;
-                Logger logger2 = this.Logger;
                 DefaultInterpolatedStringHandler interpolatedStringHandler2 = new DefaultInterpolatedStringHandler(37, 2);
                 interpolatedStringHandler2.AppendLiteral("Force stopping ");
                 interpolatedStringHandler2.AppendFormatted(deviceAndMotorId);
                 interpolatedStringHandler2.AppendLiteral(" because of StopAfter=");
                 interpolatedStringHandler2.AppendFormatted<float>(StopAfter);
                 string stringAndClear2 = interpolatedStringHandler2.ToStringAndClear();
-                logger2.Debug(stringAndClear2);
+                Logger.Debug(stringAndClear2);
                 this.SendCommand(command, device, 0, motorId);
                 this.CurrentPlayingTrigger = (Trigger)null;
             })).Start();
@@ -647,7 +632,6 @@ namespace FFXIV_Vibe_Plugin.Device
                     string[] strArray = patternSegments[index].Split(":");
                     int intensity = Helpers.ClampIntensity(int.Parse(strArray[0]), threshold);
                     int num = int.Parse(strArray[1]);
-                    Logger logger3 = this.Logger;
                     DefaultInterpolatedStringHandler interpolatedStringHandler3 = new DefaultInterpolatedStringHandler(55, 4);
                     interpolatedStringHandler3.AppendLiteral("SENDING SEGMENT: command=");
                     interpolatedStringHandler3.AppendFormatted(command);
@@ -658,11 +642,10 @@ namespace FFXIV_Vibe_Plugin.Device
                     interpolatedStringHandler3.AppendLiteral(" motorId=");
                     interpolatedStringHandler3.AppendFormatted<int>(motorId);
                     string stringAndClear3 = interpolatedStringHandler3.ToStringAndClear();
-                    logger3.Debug(stringAndClear3);
+                    Logger.Debug(stringAndClear3);
                     this.SendCommand(command, device, intensity, motorId, num);
                     if (forceStop || (double)StopAfter > 0.0 && (double)StopAfter * 1000.0 + (double)startedUnixTime < (double)Helpers.GetUnix())
                     {
-                        Logger logger4 = this.Logger;
                         interpolatedStringHandler3 = new DefaultInterpolatedStringHandler(60, 4);
                         interpolatedStringHandler3.AppendLiteral("SENDING SEGMENT ZERO: command=");
                         interpolatedStringHandler3.AppendFormatted(command);
@@ -673,7 +656,7 @@ namespace FFXIV_Vibe_Plugin.Device
                         interpolatedStringHandler3.AppendLiteral(" motorId=");
                         interpolatedStringHandler3.AppendFormatted<int>(motorId);
                         string stringAndClear4 = interpolatedStringHandler3.ToStringAndClear();
-                        logger4.Debug(stringAndClear4);
+                        Logger.Debug(stringAndClear4);
                         this.SendCommand(command, device, 0, motorId, num);
                         break;
                     }

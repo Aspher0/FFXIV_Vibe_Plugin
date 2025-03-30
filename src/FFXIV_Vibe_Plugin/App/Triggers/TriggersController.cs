@@ -12,14 +12,12 @@ namespace FFXIV_Vibe_Plugin.Triggers
 {
     public class TriggersController
     {
-        private readonly Logger Logger;
         private readonly PlayerStats PlayerStats;
         private ConfigurationProfile Profile;
         private List<Trigger> Triggers = new List<Trigger>();
 
-        public TriggersController(Logger logger, PlayerStats playerStats, ConfigurationProfile profile)
+        public TriggersController(PlayerStats playerStats, ConfigurationProfile profile)
         {
-            this.Logger = logger;
             this.PlayerStats = playerStats;
             this.Profile = profile;
         }
@@ -46,11 +44,10 @@ namespace FFXIV_Vibe_Plugin.Triggers
             for (int index = 0; index < this.Triggers.Count; ++index)
             {
                 Trigger trigger = this.Triggers[index];
-                if (trigger.Enabled && (chatType == XivChatType.Echo || Helpers.RegExpMatch(this.Logger, ChatFromPlayerName, trigger.FromPlayerName) && (trigger.AllowedChatTypes.Count <= 0 || trigger.AllowedChatTypes.Any(ct => (int)ct == (int)chatType))) && trigger.Kind == 0 && Helpers.RegExpMatch(this.Logger, ChatMsg, trigger.ChatText)) // A VERIFIER
+                if (trigger.Enabled && (chatType == XivChatType.Echo || Helpers.RegExpMatch(ChatFromPlayerName, trigger.FromPlayerName) && (trigger.AllowedChatTypes.Count <= 0 || trigger.AllowedChatTypes.Any(ct => (int)ct == (int)chatType))) && trigger.Kind == 0 && Helpers.RegExpMatch(ChatMsg, trigger.ChatText))
                 {
                     if (this.Profile.VERBOSE_CHAT)
                     {
-                        Logger logger = this.Logger;
                         DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(31, 3);
                         interpolatedStringHandler.AppendLiteral("ChatTrigger matched ");
                         interpolatedStringHandler.AppendFormatted(trigger.ChatText);
@@ -59,7 +56,7 @@ namespace FFXIV_Vibe_Plugin.Triggers
                         interpolatedStringHandler.AppendLiteral(", adding ");
                         interpolatedStringHandler.AppendFormatted<Trigger>(trigger);
                         string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                        logger.Debug(stringAndClear);
+                        Logger.Debug(stringAndClear);
                     }
                     triggerList.Add(trigger);
                 }
@@ -74,21 +71,20 @@ namespace FFXIV_Vibe_Plugin.Triggers
             for (int index = 0; index < this.Triggers.Count; ++index)
             {
                 Trigger trigger = this.Triggers[index];
-                if (trigger.Enabled && Helpers.RegExpMatch(this.Logger, spell.Player.Name, trigger.FromPlayerName) && trigger.Kind == 1 && Helpers.RegExpMatch(this.Logger, text, trigger.SpellText) && (trigger.ActionEffectType == 0 || (Structures.ActionEffectType)trigger.ActionEffectType == spell.ActionEffectType) && (trigger.ActionEffectType != 3 && trigger.ActionEffectType != 4 || (double)trigger.AmountMinValue < (double)spell.AmountAverage && (double)trigger.AmountMaxValue > (double)spell.AmountAverage))
+                if (trigger.Enabled && Helpers.RegExpMatch(spell.Player.Name, trigger.FromPlayerName) && trigger.Kind == 1 && Helpers.RegExpMatch(text, trigger.SpellText) && (trigger.ActionEffectType == 0 || (Structures.ActionEffectType)trigger.ActionEffectType == spell.ActionEffectType) && (trigger.ActionEffectType != 3 && trigger.ActionEffectType != 4 || (double)trigger.AmountMinValue < (double)spell.AmountAverage && (double)trigger.AmountMaxValue > (double)spell.AmountAverage))
                 {
                     DIRECTION spellDirection = this.GetSpellDirection(spell);
                     if (trigger.Direction == 0 || spellDirection == (DIRECTION)trigger.Direction)
                     {
                         if (this.Profile.VERBOSE_SPELL)
                         {
-                            Logger logger = this.Logger;
                             DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(30, 2);
                             interpolatedStringHandler.AppendLiteral("SpellTrigger matched ");
                             interpolatedStringHandler.AppendFormatted<Structures.Spell>(spell);
                             interpolatedStringHandler.AppendLiteral(", adding ");
                             interpolatedStringHandler.AppendFormatted<Trigger>(trigger);
                             string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                            logger.Debug(stringAndClear);
+                            Logger.Debug(stringAndClear);
                         }
                         triggerList.Add(trigger);
                     }
@@ -115,7 +111,6 @@ namespace FFXIV_Vibe_Plugin.Triggers
                     DefaultInterpolatedStringHandler interpolatedStringHandler;
                     if (trigger.AmountInPercentage)
                     {
-                        Logger logger = this.Logger;
                         interpolatedStringHandler = new DefaultInterpolatedStringHandler(41, 3);
                         interpolatedStringHandler.AppendLiteral("HPChanged Triggers (in percentage): ");
                         interpolatedStringHandler.AppendFormatted<float>(percentageHP);
@@ -124,11 +119,10 @@ namespace FFXIV_Vibe_Plugin.Triggers
                         interpolatedStringHandler.AppendLiteral(", ");
                         interpolatedStringHandler.AppendFormatted<int>(trigger.AmountMaxValue);
                         string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                        logger.Debug(stringAndClear);
+                        Logger.Debug(stringAndClear);
                     }
                     else
                     {
-                        Logger logger = this.Logger;
                         interpolatedStringHandler = new DefaultInterpolatedStringHandler(24, 3);
                         interpolatedStringHandler.AppendLiteral("HPChanged Triggers: ");
                         interpolatedStringHandler.AppendFormatted<int>(currentHP);
@@ -137,7 +131,7 @@ namespace FFXIV_Vibe_Plugin.Triggers
                         interpolatedStringHandler.AppendLiteral(", ");
                         interpolatedStringHandler.AppendFormatted<int>(trigger.AmountMaxValue);
                         string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                        logger.Debug(stringAndClear);
+                        Logger.Debug(stringAndClear);
                     }
                     triggerList.Add(trigger);
                 }
@@ -162,7 +156,7 @@ namespace FFXIV_Vibe_Plugin.Triggers
                         if (party != null)
                         {
                             string text = party.Name.ToString();
-                            if (Helpers.RegExpMatch(this.Logger, text, trigger.FromPlayerName))
+                            if (Helpers.RegExpMatch(text, trigger.FromPlayerName))
                             {
                                 uint maxHp = party.MaxHP;
                                 uint currentHp = party.CurrentHP;
@@ -179,7 +173,6 @@ namespace FFXIV_Vibe_Plugin.Triggers
                                     DefaultInterpolatedStringHandler interpolatedStringHandler;
                                     if (trigger.AmountInPercentage)
                                     {
-                                        Logger logger = this.Logger;
                                         interpolatedStringHandler = new DefaultInterpolatedStringHandler(51, 4);
                                         interpolatedStringHandler.AppendLiteral("HPChangedOther for ");
                                         interpolatedStringHandler.AppendFormatted(text);
@@ -190,11 +183,10 @@ namespace FFXIV_Vibe_Plugin.Triggers
                                         interpolatedStringHandler.AppendLiteral(", ");
                                         interpolatedStringHandler.AppendFormatted<int>(trigger.AmountMaxValue);
                                         string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                                        logger.Debug(stringAndClear);
+                                        Logger.Debug(stringAndClear);
                                     }
                                     else
                                     {
-                                        Logger logger = this.Logger;
                                         interpolatedStringHandler = new DefaultInterpolatedStringHandler(34, 4);
                                         interpolatedStringHandler.AppendLiteral("HPChangedOther for ");
                                         interpolatedStringHandler.AppendFormatted(text);
@@ -205,7 +197,7 @@ namespace FFXIV_Vibe_Plugin.Triggers
                                         interpolatedStringHandler.AppendLiteral(", ");
                                         interpolatedStringHandler.AppendFormatted<int>(trigger.AmountMaxValue);
                                         string stringAndClear = interpolatedStringHandler.ToStringAndClear();
-                                        logger.Debug(stringAndClear);
+                                        Logger.Debug(stringAndClear);
                                     }
                                     triggerList.Add(trigger);
                                 }

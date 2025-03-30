@@ -16,11 +16,9 @@ namespace FFXIV_Vibe_Plugin.UI
     {
         public static void Draw(
           int frameCounter,
-          Logger logger,
           string donationLink,
           string KofiLink,
-          DevicesController devicesController,
-          Premium premium)
+          DevicesController devicesController)
         {
             ImGui.Columns(1, "###main_header", false);
             if (devicesController.IsConnected())

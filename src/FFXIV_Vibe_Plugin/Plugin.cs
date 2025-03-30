@@ -14,61 +14,58 @@ namespace FFXIV_Vibe_Plugin
     public sealed class Plugin : IDalamudPlugin
     {
         [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-        [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
 
         public string Name => "FFXIV Vibe Plugin";
 
         public WindowSystem WindowSystem = new("SamplePlugin");
-        private Main app;
 
         public static readonly string ShortName = "FVP";
         public readonly string CommandName = "/fvp";
 
-        public Configuration Configuration { get; init; }
-
         public Plugin()
         {
-            this.Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            this.Configuration.Initialize(PluginInterface);
+            PluginInterface.Create<Service>();
+            Service.Plugin = this;
+            Service.InitializeService();
 
-            app = PluginInterface.Create<Main>(this, CommandName, ShortName, Configuration)!;
+            Service.App = PluginInterface.Create<Main>(CommandName, ShortName)!;
 
-            CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
-            {
-                HelpMessage = "A vibe plugin for fun..."
-            });
+            WindowSystem.AddWindow(Service.App.PluginUi);
 
             PluginInterface.UiBuilder.Draw += DrawUI;
             PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-            WindowSystem.AddWindow(app.PluginUi);
+            Service.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+            {
+                HelpMessage = "A vibe plugin for fun..."
+            });
         }
 
         public void Dispose()
         {
             WindowSystem.RemoveAllWindows();
-            CommandManager.RemoveHandler(CommandName);
-            app.Dispose();
+            Service.CommandManager.RemoveHandler(CommandName);
+            Service.App.Dispose();
         }
 
         private void OnCommand(string command, string args)
         {
-            app.OnCommand(command, args);
+            Service.App.OnCommand(command, args);
         }
 
         private void DrawUI()
         {
             WindowSystem.Draw();
 
-            if (app == null)
+            if (Service.App == null)
                 return;
 
-            app.DrawUI();
+            Service.App.DrawUI();
         }
 
         public void DrawConfigUI()
         {
-            this.WindowSystem.Windows[0].IsOpen = true;
+            WindowSystem.Windows[0].IsOpen = !WindowSystem.Windows[0].IsOpen;
         }
     }
 }

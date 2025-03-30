@@ -14,7 +14,6 @@ namespace FFXIV_Vibe_Plugin.App
 {
     public class Premium
     {
-        private Logger Logger;
         private bool shouldStop;
         private bool isPremium;
         private string premiumLevel = "";
@@ -26,9 +25,8 @@ namespace FFXIV_Vibe_Plugin.App
         public bool invalidTokenFormat;
         public string serverMsg = "";
 
-        public Premium(Logger logger, ConfigurationProfile configurationProfile)
+        public Premium(ConfigurationProfile configurationProfile)
         {
-            this.Logger = logger;
             this.ConfigurationProfile = configurationProfile;
             new Task(obj =>
             {

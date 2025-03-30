@@ -10,7 +10,7 @@ namespace FFXIV_Vibe_Plugin.UI.Components
 {
     internal class ButtonLink
     {
-        public static void Draw(string text, string link, FontAwesomeIcon Icon, Logger Logger)
+        public static void Draw(string text, string link, FontAwesomeIcon Icon)
         {
             if (ImGuiComponents.IconButton(Icon))
             {

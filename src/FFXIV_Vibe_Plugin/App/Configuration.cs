@@ -18,9 +18,6 @@ namespace FFXIV_Vibe_Plugin.App
         public List<Pattern> PatternList = new List<Pattern>();
         public string EXPORT_DIR = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\FFXIV_Vibe_Plugin";
         public Dictionary<string, Device.Device> VISITED_DEVICES = new Dictionary<string, Device.Device>();
-        // the below exist just to make saving less cumbersome
-        [NonSerialized]
-        private IDalamudPluginInterface? pluginInterface;
 
         public int Version { get; set; }
 
@@ -48,9 +45,8 @@ namespace FFXIV_Vibe_Plugin.App
 
         //public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true; // Sample Plugin
 
-        public void Initialize(IDalamudPluginInterface pluginInterface)
+        public void Initialize()
         {
-            this.pluginInterface = pluginInterface;
             try
             {
                 Directory.CreateDirectory(EXPORT_DIR);
@@ -62,7 +58,7 @@ namespace FFXIV_Vibe_Plugin.App
 
         public void Save()
         {
-            pluginInterface!.SavePluginConfig(this);
+            Service.PluginInterface.SavePluginConfig(this);
         }
 
         public ConfigurationProfile? GetProfile(string name = "")

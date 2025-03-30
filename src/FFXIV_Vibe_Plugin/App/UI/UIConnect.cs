@@ -11,11 +11,8 @@ namespace FFXIV_Vibe_Plugin.UI
     internal class UIConnect
     {
         public static void Draw(
-          Configuration configuration,
           ConfigurationProfile configurationProfile,
-          Main plugin,
-          DevicesController devicesController,
-          Premium premium)
+          DevicesController devicesController)
         {
             ImGui.Spacing();
             ImGui.TextColored(ImGuiColors.DalamudViolet, "Server address & port");
@@ -25,7 +22,7 @@ namespace FFXIV_Vibe_Plugin.UI
             if (ImGui.InputText("##serverHost", ref buttplugServerHost, 99U))
             {
                 configurationProfile.BUTTPLUG_SERVER_HOST = buttplugServerHost.Trim().ToLower();
-                configuration.Save();
+                Service.Configuration!.Save();
             }
             ImGui.SameLine();
             ImGuiComponents.HelpMarker("Go in the option tab if you need WSS (default: 127.0.0.1)");
@@ -35,7 +32,7 @@ namespace FFXIV_Vibe_Plugin.UI
             if (ImGui.InputInt("##serverPort", ref buttplugServerPort, 10))
             {
                 configurationProfile.BUTTPLUG_SERVER_PORT = buttplugServerPort;
-                configuration.Save();
+                Service.Configuration!.Save();
             }
             ImGui.SameLine();
             ImGuiComponents.HelpMarker("Use '-1' as port number to not define it (default: 12345)");
@@ -45,7 +42,7 @@ namespace FFXIV_Vibe_Plugin.UI
             if (!devicesController.IsConnected())
             {
                 if (ImGui.Button("Connect", new Vector2(100f, 24f)))
-                    plugin.Command_DeviceController_Connect();
+                    Service.App.Command_DeviceController_Connect();
             }
             else if (ImGui.Button("Disconnect", new Vector2(100f, 24f)))
                 devicesController.Disconnect();
@@ -54,7 +51,7 @@ namespace FFXIV_Vibe_Plugin.UI
             if (ImGui.Checkbox("Automatically connects. ", ref autoConnect))
             {
                 configurationProfile.AUTO_CONNECT = autoConnect;
-                configuration.Save();
+                Service.Configuration!.Save();
             }
             ImGui.EndChild();
         }

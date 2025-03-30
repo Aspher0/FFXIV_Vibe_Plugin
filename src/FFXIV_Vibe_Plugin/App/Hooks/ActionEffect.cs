@@ -2,6 +2,7 @@ using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
+using FFXIV_Vibe_Plugin.App;
 using FFXIV_Vibe_Plugin.Commons;
 using Lumina.Excel;
 using Lumina.Text;
@@ -15,35 +16,15 @@ namespace FFXIV_Vibe_Plugin.Hooks
 {
     internal class ActionEffect
     {
-        private readonly IDataManager? DataManager;
-        private readonly Logger Logger;
-        private readonly SigScanner Scanner;
-        private readonly IClientState ClientState;
-        private readonly IObjectTable GameObjects;
-        private readonly IGameInteropProvider InteropProvider;
         private readonly ExcelSheet<Lumina.Excel.Sheets.Action>? LuminaActionSheet;
-        private Hook<ActionEffect.HOOK_ReceiveActionEffectDelegate> receiveActionEffectHook;
+        private Hook<HOOK_ReceiveActionEffectDelegate> receiveActionEffectHook;
 
         public event EventHandler<HookActionEffects_ReceivedEventArgs>? ReceivedEvent;
 
-        public ActionEffect(
-          IDataManager dataManager,
-          Logger logger,
-          SigScanner scanner,
-          IClientState clientState,
-          IObjectTable gameObjects,
-          IGameInteropProvider interopProvider)
+        public ActionEffect()
         {
-            this.DataManager = dataManager;
-            this.Logger = logger;
-            this.Scanner = scanner;
-            this.ClientState = clientState;
-            this.GameObjects = gameObjects;
-            this.InteropProvider = interopProvider;
             this.InitHook();
-            if (this.DataManager == null)
-                return;
-            this.LuminaActionSheet = this.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>();
+            this.LuminaActionSheet = Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>();
         }
 
         public void Dispose()
@@ -56,19 +37,19 @@ namespace FFXIV_Vibe_Plugin.Hooks
         {
             try
             {
-                // Found on: https://github.com/lmcintyre/DamageInfoPlugin/blob/main/DamageInfoPlugin/DamageInfoPlugin.cs#L133
-                string signature = "40 55 56 57 41 54 41 55 41 56 48 8D AC 24";
-                this.receiveActionEffectHook = this.InteropProvider.HookFromAddress<ActionEffect.HOOK_ReceiveActionEffectDelegate>(this.Scanner.ScanText(signature), new ActionEffect.HOOK_ReceiveActionEffectDelegate(this.ReceiveActionEffect), (IGameInteropProvider.HookBackend)0);
+                // Found on: https://github.com/perchbirdd/DamageInfoPlugin/blob/main/DamageInfoPlugin/DamageInfoPlugin.cs#L126
+                string signature = "40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 70";
+                this.receiveActionEffectHook = Service.InteropProvider.HookFromAddress(Service.Scanner.ScanText(signature), new HOOK_ReceiveActionEffectDelegate(ReceiveActionEffect), 0);
                 this.receiveActionEffectHook.Enable();
             }
             catch (Exception ex)
             {
                 this.Dispose();
-                this.Logger.Warn("Encountered an error loading HookActionEffect: " + ex.Message + ". Disabling it...");
+                Logger.Warn("Encountered an error loading HookActionEffect: " + ex.Message + ". Disabling it...");
                 throw;
             }
 
-            this.Logger.Log("HookActionEffect was correctly enabled!");
+            Logger.Log("HookActionEffect was correctly enabled!");
         }
 
         private unsafe void ReceiveActionEffect(
@@ -104,7 +85,7 @@ namespace FFXIV_Vibe_Plugin.Hooks
             }
             catch (Exception ex)
             {
-                this.Logger.Log(ex.Message + " " + ex.StackTrace);
+                Logger.Log(ex.Message + " " + ex.StackTrace);
             }
             this.RestoreOriginalHook(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
         }
@@ -198,7 +179,7 @@ namespace FFXIV_Vibe_Plugin.Hooks
         {
             if (this.LuminaActionSheet == null)
             {
-                this.Logger.Warn("HookActionEffect.GetSpellName: LuminaActionSheet is null");
+                Logger.Warn("HookActionEffect.GetSpellName: LuminaActionSheet is null");
                 return "***LUMINA ACTION SHEET NOT LOADED***";
             }
 
@@ -234,11 +215,12 @@ namespace FFXIV_Vibe_Plugin.Hooks
 
         private string GetCharacterNameFromSourceId(int sourceId)
         {
-            IGameObject gameObject = this.GameObjects.SearchById((ulong)(uint)sourceId);
+            IGameObject gameObject = Service.GameObjects!.SearchById((uint)sourceId);
             string nameFromSourceId = "";
-            //if (GameObject.op_Inequality(gameObject, (GameObject)null))
-            if (gameObject != null) // A VERIFIER
+
+            if (gameObject != null)
                 nameFromSourceId = gameObject.Name.TextValue;
+
             return nameFromSourceId;
         }
 
