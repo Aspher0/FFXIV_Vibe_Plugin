@@ -39,6 +39,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="InteropGenerator.Runtime">
+      <HintPath>C:\Users\pierr\AppData\Roaming\XIVLauncher\addon\Hooks\dev\InteropGenerator.Runtime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Update="DalamudPackager" Version="12.0.0" />
   </ItemGroup>
 </Project>

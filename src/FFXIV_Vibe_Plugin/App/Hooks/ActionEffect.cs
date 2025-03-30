@@ -39,9 +39,9 @@ namespace FFXIV_Vibe_Plugin.Hooks
             try
             {
                 // Found on: https://github.com/perchbirdd/DamageInfoPlugin/blob/main/DamageInfoPlugin/DamageInfoPlugin.cs#L126
-                string signature = "40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 70";
-                this.receiveActionEffectHook = Service.InteropProvider.HookFromAddress(Service.Scanner.ScanText(signature), new HOOK_ReceiveActionEffectDelegate(ReceiveActionEffect), 0);
-                this.receiveActionEffectHook.Enable();
+                var receiveActionEffectFuncPtr = Service.Scanner.ScanText("40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 70");
+                receiveActionEffectHook = Service.InteropProvider.HookFromAddress<HOOK_ReceiveActionEffectDelegate>(receiveActionEffectFuncPtr, new HOOK_ReceiveActionEffectDelegate(ReceiveActionEffect), 0);
+                receiveActionEffectHook.Enable();
             }
             catch (Exception ex)
             {
@@ -53,78 +53,34 @@ namespace FFXIV_Vibe_Plugin.Hooks
             Logger.Log("HookActionEffect was correctly enabled!");
         }
 
-        //private async void ReceiveActionEffect(int sourceId,IntPtr sourceCharacter,IntPtr pos,IntPtr effectHeader,IntPtr effectArray,IntPtr effectTrail)
-        //{
-        //    Structures.Spell spell = new Structures.Spell();
-        //    try
-        //    {
-        //        string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
-
-        //        unsafe
-        //        {
-        //            uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
-        //            int num1 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
-        //            int num2 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
-        //            byte count = *(byte*)(effectHeader + new IntPtr(33));
-        //            Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
-        //            string spellName = this.GetSpellName(actionId, true);
-        //            int[] amounts = this.GetAmounts(count, effectArray);
-        //            float averageAmount = (float)ActionEffect.ComputeAverageAmount(amounts);
-        //            List<Structures.Player> allTarget = await GetAllTarget(count, effectTrail, amounts);
-        //            spell.Id = (int)actionId;
-        //            spell.Name = spellName;
-        //            spell.Player = new Structures.Player(sourceId, nameFromSourceId);
-        //            spell.Amounts = amounts;
-        //            spell.AmountAverage = averageAmount;
-        //            spell.Targets = allTarget;
-        //            spell.DamageType = Structures.DamageType.Unknown;
-        //            spell.ActionEffectType = allTarget.Count != 0 ? effectEntry.type : Structures.ActionEffectType.Any;
-        //            this.DispatchReceivedEvent(spell);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.Log(ex.Message + " " + ex.StackTrace);
-        //    }
-        //    this.RestoreOriginalHook(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
-        //}
-
         private async void ReceiveActionEffect(int sourceId, IntPtr sourceCharacter, IntPtr pos, IntPtr effectHeader, IntPtr effectArray, IntPtr effectTrail)
         {
             Structures.Spell spell = new Structures.Spell();
             try
             {
-                string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
-                byte count;
-                IntPtr effectTrailCopy;
-                int[] amounts;
+                string nameFromSourceId = GetCharacterNameFromSourceId(sourceId);
 
                 unsafe
                 {
                     uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
                     int num1 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
                     int num2 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
-                    count = *(byte*)(effectHeader + new IntPtr(33));
+                    byte count = *(byte*)(effectHeader + new IntPtr(33));
                     Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
                     string spellName = this.GetSpellName(actionId, true);
-                    amounts = this.GetAmounts(count, effectArray);
+                    int[] amounts = this.GetAmounts(count, effectArray);
                     float averageAmount = (float)ActionEffect.ComputeAverageAmount(amounts);
-
-                    effectTrailCopy = effectTrail;
-
+                    List<Structures.Player> allTarget = GetAllTarget(count, effectTrail, amounts);
                     spell.Id = (int)actionId;
                     spell.Name = spellName;
                     spell.Player = new Structures.Player(sourceId, nameFromSourceId);
                     spell.Amounts = amounts;
                     spell.AmountAverage = averageAmount;
+                    spell.Targets = allTarget;
                     spell.DamageType = Structures.DamageType.Unknown;
-                    spell.ActionEffectType = Structures.ActionEffectType.Any;
+                    spell.ActionEffectType = allTarget.Count != 0 ? effectEntry.type : Structures.ActionEffectType.Any;
+                    this.DispatchReceivedEvent(spell);
                 }
-
-                List<Structures.Player> allTarget = await GetAllTarget(count, effectTrailCopy, amounts);
-                spell.Targets = allTarget;
-
-                this.DispatchReceivedEvent(spell);
             }
             catch (Exception ex)
             {
@@ -132,6 +88,50 @@ namespace FFXIV_Vibe_Plugin.Hooks
             }
             this.RestoreOriginalHook(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
         }
+
+        //private async void ReceiveActionEffect(int sourceId, IntPtr sourceCharacter, IntPtr pos, IntPtr effectHeader, IntPtr effectArray, IntPtr effectTrail)
+        //{
+        //    Structures.Spell spell = new Structures.Spell();
+        //    try
+        //    {
+        //        string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
+        //        byte count;
+        //        IntPtr effectTrailCopy;
+        //        int[] amounts;
+
+        //        unsafe
+        //        {
+        //            uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
+        //            int num1 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
+        //            int num2 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
+        //            count = *(byte*)(effectHeader + new IntPtr(33));
+        //            Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
+        //            string spellName = this.GetSpellName(actionId, true);
+        //            amounts = this.GetAmounts(count, effectArray);
+        //            float averageAmount = (float)ActionEffect.ComputeAverageAmount(amounts);
+
+        //            effectTrailCopy = effectTrail;
+
+        //            spell.Id = (int)actionId;
+        //            spell.Name = spellName;
+        //            spell.Player = new Structures.Player(sourceId, nameFromSourceId);
+        //            spell.Amounts = amounts;
+        //            spell.AmountAverage = averageAmount;
+        //            spell.DamageType = Structures.DamageType.Unknown;
+        //            spell.ActionEffectType = Structures.ActionEffectType.Any;
+        //        }
+
+        //        List<Structures.Player> allTarget = await GetAllTarget(count, effectTrailCopy, amounts);
+        //        spell.Targets = allTarget;
+
+        //        this.DispatchReceivedEvent(spell);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Logger.Log(ex.Message + " " + ex.StackTrace);
+        //    }
+        //    this.RestoreOriginalHook(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
+        //}
 
         private void RestoreOriginalHook(
           int sourceId,
@@ -190,7 +190,7 @@ namespace FFXIV_Vibe_Plugin.Hooks
             return num != 0 ? num / amounts.Length : num;
         }
 
-        private async Task<List<Structures.Player>> GetAllTarget(byte count,IntPtr effectTrail,int[] amounts)
+        private List<Structures.Player> GetAllTarget(byte count,IntPtr effectTrail,int[] amounts)
         {
             List<Structures.Player> allTarget = new List<Structures.Player>();
 
@@ -206,7 +206,7 @@ namespace FFXIV_Vibe_Plugin.Hooks
                     }
 
                     int sourceId = (int)numArray[index];
-                    string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
+                    string nameFromSourceId = GetCharacterNameFromSourceId(sourceId);
                     Structures.Player player = new Structures.Player();
                     ref Structures.Player local = ref player;
                     int id = sourceId;
@@ -259,9 +259,9 @@ namespace FFXIV_Vibe_Plugin.Hooks
             }
         }
 
-        private async Task<string> GetCharacterNameFromSourceId(int sourceId)
+        private string GetCharacterNameFromSourceId(int sourceId)
         {
-            IGameObject gameObject = await Service.Framework.RunOnFrameworkThread(() => Service.GameObjects!.SearchById((uint)sourceId));
+            IGameObject gameObject = Service.GameObjects!.SearchById((uint)sourceId);
             string nameFromSourceId = "";
 
             if (gameObject != null)
