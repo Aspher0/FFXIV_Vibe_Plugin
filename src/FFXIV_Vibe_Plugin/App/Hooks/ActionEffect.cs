@@ -10,6 +10,7 @@ using Lumina.Text.ReadOnly;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 #nullable enable
 namespace FFXIV_Vibe_Plugin.Hooks
@@ -52,35 +53,77 @@ namespace FFXIV_Vibe_Plugin.Hooks
             Logger.Log("HookActionEffect was correctly enabled!");
         }
 
-        private unsafe void ReceiveActionEffect(
-          int sourceId,
-          IntPtr sourceCharacter,
-          IntPtr pos,
-          IntPtr effectHeader,
-          IntPtr effectArray,
-          IntPtr effectTrail)
+        //private async void ReceiveActionEffect(int sourceId,IntPtr sourceCharacter,IntPtr pos,IntPtr effectHeader,IntPtr effectArray,IntPtr effectTrail)
+        //{
+        //    Structures.Spell spell = new Structures.Spell();
+        //    try
+        //    {
+        //        string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
+
+        //        unsafe
+        //        {
+        //            uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
+        //            int num1 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
+        //            int num2 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
+        //            byte count = *(byte*)(effectHeader + new IntPtr(33));
+        //            Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
+        //            string spellName = this.GetSpellName(actionId, true);
+        //            int[] amounts = this.GetAmounts(count, effectArray);
+        //            float averageAmount = (float)ActionEffect.ComputeAverageAmount(amounts);
+        //            List<Structures.Player> allTarget = await GetAllTarget(count, effectTrail, amounts);
+        //            spell.Id = (int)actionId;
+        //            spell.Name = spellName;
+        //            spell.Player = new Structures.Player(sourceId, nameFromSourceId);
+        //            spell.Amounts = amounts;
+        //            spell.AmountAverage = averageAmount;
+        //            spell.Targets = allTarget;
+        //            spell.DamageType = Structures.DamageType.Unknown;
+        //            spell.ActionEffectType = allTarget.Count != 0 ? effectEntry.type : Structures.ActionEffectType.Any;
+        //            this.DispatchReceivedEvent(spell);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Logger.Log(ex.Message + " " + ex.StackTrace);
+        //    }
+        //    this.RestoreOriginalHook(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
+        //}
+
+        private async void ReceiveActionEffect(int sourceId, IntPtr sourceCharacter, IntPtr pos, IntPtr effectHeader, IntPtr effectArray, IntPtr effectTrail)
         {
             Structures.Spell spell = new Structures.Spell();
             try
             {
-                uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
-                int num1 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
-                int num2 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
-                byte count = *(byte*)(effectHeader + new IntPtr(33));
-                Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
-                string nameFromSourceId = this.GetCharacterNameFromSourceId(sourceId);
-                string spellName = this.GetSpellName(actionId, true);
-                int[] amounts = this.GetAmounts(count, effectArray);
-                float averageAmount = (float)ActionEffect.ComputeAverageAmount(amounts);
-                List<Structures.Player> allTarget = this.GetAllTarget(count, effectTrail, amounts);
-                spell.Id = (int)actionId;
-                spell.Name = spellName;
-                spell.Player = new Structures.Player(sourceId, nameFromSourceId);
-                spell.Amounts = amounts;
-                spell.AmountAverage = averageAmount;
+                string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
+                byte count;
+                IntPtr effectTrailCopy;
+                int[] amounts;
+
+                unsafe
+                {
+                    uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
+                    int num1 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
+                    int num2 = (int)*(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
+                    count = *(byte*)(effectHeader + new IntPtr(33));
+                    Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
+                    string spellName = this.GetSpellName(actionId, true);
+                    amounts = this.GetAmounts(count, effectArray);
+                    float averageAmount = (float)ActionEffect.ComputeAverageAmount(amounts);
+
+                    effectTrailCopy = effectTrail;
+
+                    spell.Id = (int)actionId;
+                    spell.Name = spellName;
+                    spell.Player = new Structures.Player(sourceId, nameFromSourceId);
+                    spell.Amounts = amounts;
+                    spell.AmountAverage = averageAmount;
+                    spell.DamageType = Structures.DamageType.Unknown;
+                    spell.ActionEffectType = Structures.ActionEffectType.Any;
+                }
+
+                List<Structures.Player> allTarget = await GetAllTarget(count, effectTrailCopy, amounts);
                 spell.Targets = allTarget;
-                spell.DamageType = Structures.DamageType.Unknown;
-                spell.ActionEffectType = allTarget.Count != 0 ? effectEntry.type : Structures.ActionEffectType.Any;
+
                 this.DispatchReceivedEvent(spell);
             }
             catch (Exception ex)
@@ -147,26 +190,29 @@ namespace FFXIV_Vibe_Plugin.Hooks
             return num != 0 ? num / amounts.Length : num;
         }
 
-        private unsafe List<Structures.Player> GetAllTarget(
-          byte count,
-          IntPtr effectTrail,
-          int[] amounts)
+        private async Task<List<Structures.Player>> GetAllTarget(byte count,IntPtr effectTrail,int[] amounts)
         {
             List<Structures.Player> allTarget = new List<Structures.Player>();
-            if (count >= (byte)1)
+
+            if (count >= 1)
             {
-                ulong[] numArray = new ulong[(int)count];
-                for (int index = 0; index < (int)count; ++index)
+                ulong[] numArray = new ulong[count];
+
+                for (int index = 0; index < count; ++index)
                 {
-                    numArray[index] = (ulong)*(long*)(effectTrail + (IntPtr)(index * 8));
+                    unsafe
+                    {
+                        numArray[index] = (ulong)*(long*)(effectTrail + (index * 8));
+                    }
+
                     int sourceId = (int)numArray[index];
-                    string nameFromSourceId = this.GetCharacterNameFromSourceId(sourceId);
-                    Structures.Player player = new Structures.Player(); // A VERIFIER
+                    string nameFromSourceId = await GetCharacterNameFromSourceId(sourceId);
+                    Structures.Player player = new Structures.Player();
                     ref Structures.Player local = ref player;
                     int id = sourceId;
                     string name = nameFromSourceId;
                     DefaultInterpolatedStringHandler interpolatedStringHandler = new DefaultInterpolatedStringHandler(0, 1);
-                    interpolatedStringHandler.AppendFormatted<int>(amounts[index]);
+                    interpolatedStringHandler.AppendFormatted(amounts[index]);
                     string stringAndClear = interpolatedStringHandler.ToStringAndClear();
                     local = new Structures.Player(id, name, stringAndClear);
                     allTarget.Add(player);
@@ -213,9 +259,9 @@ namespace FFXIV_Vibe_Plugin.Hooks
             }
         }
 
-        private string GetCharacterNameFromSourceId(int sourceId)
+        private async Task<string> GetCharacterNameFromSourceId(int sourceId)
         {
-            IGameObject gameObject = Service.GameObjects!.SearchById((uint)sourceId);
+            IGameObject gameObject = await Service.Framework.RunOnFrameworkThread(() => Service.GameObjects!.SearchById((uint)sourceId));
             string nameFromSourceId = "";
 
             if (gameObject != null)
