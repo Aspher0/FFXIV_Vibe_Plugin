@@ -1,6 +1,6 @@
 using Dalamud.Interface.Colors;
 using FFXIV_Vibe_Plugin.Device;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System.Runtime.CompilerServices;
 
 namespace FFXIV_Vibe_Plugin.UI;

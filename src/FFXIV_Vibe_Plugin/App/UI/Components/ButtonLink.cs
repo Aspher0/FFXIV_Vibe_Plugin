@@ -1,7 +1,7 @@
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using FFXIV_Vibe_Plugin.Commons;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Diagnostics;
 

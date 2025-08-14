@@ -23,7 +23,7 @@ internal class NetworkCapture
 
         Logger.Debug("STOPPING EXPERIMENTAL");
 
-        Service.GameNetwork.NetworkMessage -= new IGameNetwork.OnNetworkMessageDelegate(OnNetworkReceived);
+        //Service.GameNetwork.NetworkMessage -= new IGameNetwork.OnNetworkMessageDelegate(OnNetworkReceived);
 
         ExperimentalNetworkCaptureStarted = false;
     }

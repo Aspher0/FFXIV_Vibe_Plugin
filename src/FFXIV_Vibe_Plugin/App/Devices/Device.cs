@@ -12,23 +12,31 @@ public class Device
     private readonly ButtplugClientDevice? ButtplugClientDevice;
     public int Id = -1;
     public string Name = "UnsetDevice";
+
     public bool CanVibrate;
     public int VibrateMotors = -1;
     private List<GenericDeviceMessageAttributes> vibrateAttributes = new List<GenericDeviceMessageAttributes>();
+
     public bool CanRotate;
     public int RotateMotors = -1;
     private List<GenericDeviceMessageAttributes> rotateAttributes = new List<GenericDeviceMessageAttributes>();
+
     public bool CanLinear;
     public int LinearMotors = -1;
     private List<GenericDeviceMessageAttributes> linearAttribute = new List<GenericDeviceMessageAttributes>();
+
     public bool CanOscillate;
     public int OscillateMotors = -1;
     private List<GenericDeviceMessageAttributes> oscillateAttribute = new List<GenericDeviceMessageAttributes>();
-    public bool CanBattery;
+
+    public bool DeviceRunsOnBattery;
     public double BatteryLevel = -1.0;
+
     public bool CanStop = true;
     public bool IsConnected;
+
     public List<UsableCommand> UsableCommands = new List<UsableCommand>();
+
     public int[] CurrentVibrateIntensity = Array.Empty<int>();
     public int[] CurrentRotateIntensity = Array.Empty<int>();
     public int[] CurrentOscillateIntensity = Array.Empty<int>();
@@ -105,7 +113,7 @@ public class Device
             if (!ButtplugClientDevice.HasBattery)
                 return;
 
-            CanBattery = true;
+            DeviceRunsOnBattery = true;
             UpdateBatteryLevel();
         }
     }
@@ -175,7 +183,7 @@ public class Device
             stringList.Add($"oscillate motors={OscillateMotors}");
         }
 
-        if (CanBattery)
+        if (DeviceRunsOnBattery)
             commandsInfo.Add("battery");
 
         if (CanStop)
@@ -186,7 +194,7 @@ public class Device
 
     public async void UpdateBatteryLevel()
     {
-        if (ButtplugClientDevice == null || !CanBattery)
+        if (ButtplugClientDevice == null || !DeviceRunsOnBattery)
             return;
 
         try

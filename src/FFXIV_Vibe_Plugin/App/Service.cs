@@ -11,7 +11,7 @@ namespace FFXIV_Vibe_Plugin.App;
 public class Service
 {
     [PluginService] public static IChatGui DalamudChat { get; private set; } = null!;
-    [PluginService] public static IGameNetwork GameNetwork { get; private set; } = null!;
+    //[PluginService] public static IGameNetwork GameNetwork { get; private set; } = null!;
     [PluginService] public static IDataManager DataManager { get; private set; } = null!;
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
     [PluginService] public static ISigScanner Scanner { get; private set; } = null!;

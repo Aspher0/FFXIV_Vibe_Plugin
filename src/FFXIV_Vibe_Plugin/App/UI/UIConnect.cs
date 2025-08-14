@@ -2,7 +2,7 @@ using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using FFXIV_Vibe_Plugin.App;
 using FFXIV_Vibe_Plugin.Device;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System.Numerics;
 
 namespace FFXIV_Vibe_Plugin.UI;
@@ -21,7 +21,7 @@ internal class UIConnect
 
         ImGui.SetNextItemWidth(200f);
 
-        if (ImGui.InputText("##serverHost", ref buttplugServerHost, 99U))
+        if (ImGui.InputText("##serverHost", ref buttplugServerHost, 99))
         {
             configurationProfile.BUTTPLUG_SERVER_HOST = buttplugServerHost.Trim().ToLower();
             Service.Configuration!.Save();

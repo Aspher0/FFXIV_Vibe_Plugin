@@ -8,7 +8,7 @@ using FFXIV_Vibe_Plugin.Commons;
 using FFXIV_Vibe_Plugin.Device;
 using FFXIV_Vibe_Plugin.Triggers;
 using FFXIV_Vibe_Plugin.UI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -238,7 +238,7 @@ public class PluginUI : Window, IDisposable
             ImGui.Text("Add new profile: ");
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(350f);
-            if (ImGui.InputText("###CONFIGURATION_NEW_PROFILE_NAME", ref this._tmp_currentProfileNameToAdd, 150U))
+            if (ImGui.InputText("###CONFIGURATION_NEW_PROFILE_NAME", ref this._tmp_currentProfileNameToAdd, 150))
                 this._tmp_currentProfile_ErrorMsg = "";
             ImGui.TableNextColumn();
             if (this._tmp_currentProfileNameToAdd.Length > 0 && ImGuiComponents.IconButton((FontAwesomeIcon)61543) && this._tmp_currentProfileNameToAdd.Trim() != "")
@@ -262,7 +262,7 @@ public class PluginUI : Window, IDisposable
             ImGui.Text("Rename current profile");
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(350f);
-            if (ImGui.InputText("###CONFIGURATION_CURRENT_PROFILE_RENAME", ref this.ConfigurationProfile.Name, 150U))
+            if (ImGui.InputText("###CONFIGURATION_CURRENT_PROFILE_RENAME", ref this.ConfigurationProfile.Name, 150))
             {
                 Service.Configuration!.CurrentProfileName = this.ConfigurationProfile.Name;
                 Service.Configuration!.Save();
@@ -284,7 +284,7 @@ public class PluginUI : Window, IDisposable
             ImGui.TableNextColumn();
             ImGui.Text("Trigger Import/Export Directory:");
             ImGui.TableNextColumn();
-            if (ImGui.InputText("###EXPORT_DIRECTORY_INPUT", ref this.ConfigurationProfile.EXPORT_DIR, 200U))
+            if (ImGui.InputText("###EXPORT_DIRECTORY_INPUT", ref this.ConfigurationProfile.EXPORT_DIR, 200))
             {
                 Service.Configuration!.EXPORT_DIR = this.ConfigurationProfile.EXPORT_DIR;
                 Service.Configuration!.Save();
@@ -461,7 +461,7 @@ public class PluginUI : Window, IDisposable
         if (ImGui.BeginChild("###TriggersSelector", new Vector2(ImGui.GetWindowContentRegionMax().X / 3f, -ImGui.GetFrameHeightWithSpacing()), true))
         {
             ImGui.SetNextItemWidth(185f);
-            ImGui.InputText("###TriggersSelector_SearchBar", ref this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR, 200U);
+            ImGui.InputText("###TriggersSelector_SearchBar", ref this.CURRENT_TRIGGER_SELECTOR_SEARCHBAR, 200);
             ImGui.Spacing();
             int num1 = triggers.Count;
 
@@ -550,7 +550,7 @@ public class PluginUI : Window, IDisposable
                         ImGui.TableNextColumn();
                         ImGui.Text("Trigger Name:");
                         ImGui.TableNextColumn();
-                        if (ImGui.InputText("###TRIGGER_NAME", ref this.SelectedTrigger.Name, 99U))
+                        if (ImGui.InputText("###TRIGGER_NAME", ref this.SelectedTrigger.Name, 99))
                         {
                             if (this.SelectedTrigger.Name == "")
                                 this.SelectedTrigger.Name = "no_name";
@@ -560,7 +560,7 @@ public class PluginUI : Window, IDisposable
                         ImGui.TableNextColumn();
                         ImGui.Text("Trigger Description:");
                         ImGui.TableNextColumn();
-                        if (ImGui.InputTextMultiline("###TRIGGER_DESCRIPTION", ref this.SelectedTrigger.Description, 500U, new Vector2(190f, 50f)))
+                        if (ImGui.InputTextMultiline("###TRIGGER_DESCRIPTION", ref this.SelectedTrigger.Description, 500, new Vector2(190f, 50f)))
                         {
                             if (this.SelectedTrigger.Description == "")
                                 this.SelectedTrigger.Description = "no_description";
@@ -595,7 +595,7 @@ public class PluginUI : Window, IDisposable
                             ImGui.Text("Player name:");
                             ImGui.TableNextColumn();
 
-                            if (ImGui.InputText("###TRIGGER_CHAT_FROM_PLAYER_NAME", ref this.SelectedTrigger.FromPlayerName, 100U))
+                            if (ImGui.InputText("###TRIGGER_CHAT_FROM_PLAYER_NAME", ref this.SelectedTrigger.FromPlayerName, 100))
                             {
                                 this.SelectedTrigger.FromPlayerName = this.SelectedTrigger.FromPlayerName.Trim();
                                 Service.Configuration!.Save();
@@ -664,7 +664,7 @@ public class PluginUI : Window, IDisposable
                         ImGui.Text("Chat text:");
                         ImGui.TableNextColumn();
                         string chatText = this.SelectedTrigger.ChatText;
-                        if (ImGui.InputText("###TRIGGER_CHAT_TEXT", ref chatText, 250U))
+                        if (ImGui.InputText("###TRIGGER_CHAT_TEXT", ref chatText, 250))
                         {
                             this.SelectedTrigger.ChatText = chatText.ToLower();
                             Service.Configuration!.Save();
@@ -726,7 +726,7 @@ public class PluginUI : Window, IDisposable
                             ImGui.TableNextColumn();
                             ImGui.Text("Spell Text:");
                             ImGui.TableNextColumn();
-                            if (ImGui.InputText("###TRIGGER_FORM_SPELLNAME", ref this.SelectedTrigger.SpellText, 100U))
+                            if (ImGui.InputText("###TRIGGER_FORM_SPELLNAME", ref this.SelectedTrigger.SpellText, 100))
                                 Service.Configuration!.Save();
                             ImGui.SameLine();
                             ImGuiComponents.HelpMarker("You can use RegExp.");
@@ -1173,14 +1173,14 @@ public class PluginUI : Window, IDisposable
             ImGui.Text("Pattern Name:");
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(300f);
-            if (ImGui.InputText("###PATTERNS_CURRENT_PATTERN_NAME_TO_ADD", ref this._tmp_currentPatternNameToAdd, 150U))
+            if (ImGui.InputText("###PATTERNS_CURRENT_PATTERN_NAME_TO_ADD", ref this._tmp_currentPatternNameToAdd, 150))
                 this._tmp_currentPatternNameToAdd = this._tmp_currentPatternNameToAdd.Trim();
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.Text("Pattern Value:");
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(300f);
-            if (ImGui.InputText("###PATTERNS_CURRENT_PATTERN_VALUE_TO_ADD", ref this._tmp_currentPatternValueToAdd, 500U))
+            if (ImGui.InputText("###PATTERNS_CURRENT_PATTERN_VALUE_TO_ADD", ref this._tmp_currentPatternValueToAdd, 500))
             {
                 this._tmp_currentPatternValueToAdd = this._tmp_currentPatternValueToAdd.Trim();
                 this._tmp_currentPatternValueState = !(this._tmp_currentPatternValueToAdd.Trim() == "") ? (Helpers.RegExpMatch(this._tmp_currentPatternValueToAdd, this.VALID_REGEXP_PATTERN) ? "valid" : "unvalid") : "unset";
@@ -1231,7 +1231,7 @@ public class PluginUI : Window, IDisposable
                 ImGui.TextColored(ImGuiColors.DalamudGrey2, "Search name:");
                 ImGui.TableNextColumn();
                 ImGui.SetNextItemWidth(150f);
-                ImGui.InputText("###PATTERN_SEARCH_BAR", ref this.CURRENT_PATTERN_SEARCHBAR, 200U);
+                ImGui.InputText("###PATTERN_SEARCH_BAR", ref this.CURRENT_PATTERN_SEARCHBAR, 200);
                 ImGui.TableNextRow();
                 for (int index = 0; index < customPatterns.Count; ++index)
                 {
@@ -1295,7 +1295,7 @@ public class PluginUI : Window, IDisposable
         ImGui.TextWrapped("Below is an example of a pattern that would vibe 1sec at 50pct intensity and 2sec at 100pct:");
         ImGui.TextWrapped("Pattern example:");
         this._tmp_void = "50:1000|100:2000";
-        ImGui.InputText("###HELP_PATTERN_EXAMPLE", ref this._tmp_void, 50U);
+        ImGui.InputText("###HELP_PATTERN_EXAMPLE", ref this._tmp_void, 50);
     }
 
     public string export_trigger(Trigger trigger)
