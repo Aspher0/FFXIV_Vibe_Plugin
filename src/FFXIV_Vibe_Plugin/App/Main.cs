@@ -232,13 +232,22 @@ public class Main
         }
         else
         {
-            Structures.Spell spell = args.Spell;
+            try
+            {
+                Structures.Spell spell = args.Spell;
 
-            if (ConfigurationProfile != null && ConfigurationProfile.VERBOSE_SPELL)
-                Logger.Debug($"VERBOSE_SPELL: {spell}");
+                if (ConfigurationProfile != null && ConfigurationProfile.VERBOSE_SPELL)
+                    Logger.Debug($"VERBOSE_SPELL: {spell}");
 
-            foreach (Trigger trigger in TriggersController.CheckTrigger_Spell(spell))
-                DeviceController.SendTrigger(trigger);
+                foreach (Trigger trigger in TriggersController.CheckTrigger_Spell(spell))
+                    DeviceController.SendTrigger(trigger);
+            }
+            catch (Exception ex)
+            {
+                NoireLogger.LogError(ex, "SpellWasTriggered exception");
+                throw;
+            }
+
         }
     }
 

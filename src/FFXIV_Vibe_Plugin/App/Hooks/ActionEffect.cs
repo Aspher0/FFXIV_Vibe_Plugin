@@ -61,30 +61,27 @@ internal class ActionEffect
         {
             string nameFromSourceId = GetCharacterNameFromSourceId(casterEntityId);
 
-            unsafe
-            {
-                uint actionId = header->ActionId;
-                byte count = header->NumTargets;
+            uint actionId = header->ActionId;
+            byte count = header->NumTargets;
 
-                var effectEntry = effects->Effects[0]; // ??
+            var effectEntry = effects->Effects[0]; // ??
 
-                string spellName = GetSpellName(actionId, true);
-                int[] amounts = GetAmounts(count, effects);
-                float averageAmount = ComputeAverageAmount(amounts);
+            string spellName = GetSpellName(actionId, true);
+            int[] amounts = GetAmounts(count, effects);
+            float averageAmount = ComputeAverageAmount(amounts);
 
-                List<Structures.Player> allTarget = GetAllTarget(count, targetEntityIds, amounts);
+            List<Structures.Player> allTarget = GetAllTarget(count, targetEntityIds, amounts);
 
-                spell.Id = actionId;
-                spell.Name = spellName;
-                spell.Player = new Structures.Player(casterEntityId, nameFromSourceId);
-                spell.Amounts = amounts;
-                spell.AmountAverage = averageAmount;
-                spell.Targets = allTarget;
-                spell.DamageType = Structures.DamageType.Unknown;
-                spell.ActionEffectType = allTarget.Count != 0 ? (Structures.ActionEffectType)effectEntry.Type : Structures.ActionEffectType.Any;
+            spell.Id = actionId;
+            spell.Name = spellName;
+            spell.Player = new Structures.Player(casterEntityId, nameFromSourceId);
+            spell.Amounts = amounts;
+            spell.AmountAverage = averageAmount;
+            spell.Targets = allTarget;
+            spell.DamageType = Structures.DamageType.Unknown;
+            spell.ActionEffectType = allTarget.Count != 0 ? (Structures.ActionEffectType)effectEntry.Type : Structures.ActionEffectType.Any;
 
-                DispatchReceivedEvent(spell);
-            }
+            DispatchReceivedEvent(spell);
         }
         catch (Exception ex)
         {
@@ -108,51 +105,105 @@ internal class ActionEffect
         receiveActionEffectHook.Original(casterEntityId, casterPtr, targetPos, header, effects, targetEntityIds);
     }
 
+    //private unsafe int[] GetAmounts(byte count, ActionEffectHandler.TargetEffects* effectArray)
+    //{
+    //    try
+    //    {
+    //        int[] amounts = new int[count];
+
+    //        int num1 = count;
+
+    //        int capacity = 0;
+
+    //        if (num1 == 0)
+    //            capacity = 0;
+    //        else if (num1 == 1)
+    //            capacity = 8;
+    //        else if (num1 <= 8)
+    //            capacity = 64;
+    //        else if (num1 <= 16)
+    //            capacity = 128;
+    //        else if (num1 <= 24)
+    //            capacity = 192;
+    //        else if (num1 <= 32)
+    //            capacity = 256;
+
+    //        List<ActionEffectHandler.Effect> effectEntryList = new List<ActionEffectHandler.Effect>(capacity);
+
+    //        for (int index = 0; index < capacity; ++index)
+    //            effectEntryList.Add(effectArray->Effects[index]);
+
+    //        int index1 = 0;
+
+    //        for (int index2 = 0; index2 < effectEntryList.Count; ++index2)
+    //        {
+    //            if (index2 % 8 == 0)
+    //            {
+    //                uint num2 = effectEntryList[index2].Value;
+
+    //                if (effectEntryList[index2].Param3 != 0)
+    //                    num2 += 65536U * effectEntryList[index2].Param3;
+
+    //                if (index1 < count)
+    //                    amounts[index1] = (int)num2;
+
+    //                ++index1;
+    //            }
+    //        }
+
+    //        return amounts;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        NoireLogger.LogError(ex, $"HookActionEffect.GetAmounts");
+    //        return [];
+    //    }
+    //}
+
     private unsafe int[] GetAmounts(byte count, ActionEffectHandler.TargetEffects* effectArray)
     {
-        int[] amounts = new int[count];
-
-        int num1 = count;
-
-        int capacity = 0;
-
-        if (num1 == 0)
-            capacity = 0;
-        else if (num1 == 1)
-            capacity = 8;
-        else if (num1 <= 8)
-            capacity = 64;
-        else if (num1 <= 16)
-            capacity = 128;
-        else if (num1 <= 24)
-            capacity = 192;
-        else if (num1 <= 32)
-            capacity = 256;
-
-        List<ActionEffectHandler.Effect> effectEntryList = new List<ActionEffectHandler.Effect>(capacity);
-
-        for (int index = 0; index < capacity; ++index)
-            effectEntryList.Add(*(ActionEffectHandler.Effect*)(effectArray + (index * 8)));
-
-        int index1 = 0;
-
-        for (int index2 = 0; index2 < effectEntryList.Count; ++index2)
+        try
         {
-            if (index2 % 8 == 0)
+            var amounts = new int[count];
+
+            if (count == 0)
+                return amounts;
+
+            var capacity = count switch
             {
-                uint num2 = effectEntryList[index2].Value;
+                0 => 0,
+                < 8 => 8,
+                < 16 => 64,
+                < 24 => 128,
+                < 32 => 192,
+                32 => 256,
+                _ => 0
+            };
 
-                if (effectEntryList[index2].Param3 != 0)
-                    num2 += 65536U * effectEntryList[index2].Param3;
+            if (capacity == 0)
+                return amounts;
 
-                if (index1 < count)
-                    amounts[index1] = (int)num2;
+            var amountIndex = 0;
 
-                ++index1;
+            for (var i = 0; i < capacity && amountIndex < count; i += 8)
+            {
+                var effect = effectArray->Effects[i];
+                var value = effect.Value;
+
+                if (effect.Param3 != 0)
+                    value += (ushort)(65536U * effect.Param3);
+
+                amounts[amountIndex] = (int)value;
+                amountIndex++;
             }
-        }
 
-        return amounts;
+            return amounts;
+        }
+        catch (Exception ex)
+        {
+            NoireLogger.LogError(ex, "HookActionEffect.GetAmounts");
+            return [];
+        }
     }
 
     private static int ComputeAverageAmount(int[] amounts)
@@ -175,7 +226,7 @@ internal class ActionEffect
 
             for (int index = 0; index < count; ++index)
             {
-                numArray[index] = (ulong)*(long*)(targetEntityIds + (index * 8));
+                numArray[index] = targetEntityIds[index];
 
                 uint sourceId = (uint)numArray[index];
                 string nameFromSourceId = GetCharacterNameFromSourceId(sourceId);
