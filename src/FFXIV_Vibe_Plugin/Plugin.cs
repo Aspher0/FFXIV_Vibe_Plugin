@@ -1,8 +1,9 @@
 using Dalamud.Game.Command;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Interface.Windowing;
 using FFXIV_Vibe_Plugin.App;
+using NoireLib;
 
 namespace FFXIV_Vibe_Plugin;
 
@@ -19,6 +20,8 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
+        NoireLibMain.Initialize(PluginInterface, this);
+
         PluginInterface.Create<Service>();
         Service.Plugin = this;
         Service.InitializeService();
@@ -30,7 +33,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += DrawUI;
         PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-        Service.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        NoireService.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "A vibe plugin for fun..."
         });
@@ -39,8 +42,8 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         WindowSystem.RemoveAllWindows();
-        Service.CommandManager.RemoveHandler(CommandName);
-        Service.App.Dispose();
+        Service.Dispose();
+        NoireLibMain.Dispose();
     }
 
     private void OnCommand(string command, string args)

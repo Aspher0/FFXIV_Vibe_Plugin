@@ -1,3 +1,4 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
@@ -8,7 +9,6 @@ using FFXIV_Vibe_Plugin.Commons;
 using FFXIV_Vibe_Plugin.Device;
 using FFXIV_Vibe_Plugin.Triggers;
 using FFXIV_Vibe_Plugin.UI;
-using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -572,10 +572,10 @@ public class PluginUI : Window, IDisposable
                         ImGui.TableNextColumn();
                         string[] names = Enum.GetNames(typeof(KIND));
 
-                        int num = this.SelectedTrigger.Kind;
+                        int num = (int)this.SelectedTrigger.Kind;
                         if (ImGui.Combo("###TRIGGER_FORM_KIND", ref num, names, names.Length))
                         {
-                            this.SelectedTrigger.Kind = num;
+                            this.SelectedTrigger.Kind = (KIND)num;
                             Service.Configuration!.Save();
                         }
                         bool flag2 = true;
@@ -656,7 +656,7 @@ public class PluginUI : Window, IDisposable
                         ImGui.EndTable();
                     }
                     ImGui.Separator();
-                    if (this.SelectedTrigger.Kind == 0 && ImGui.BeginTable("###TRIGGER_FORM_TABLE_KIND_CHAT", 2))
+                    if (this.SelectedTrigger.Kind == KIND.Chat && ImGui.BeginTable("###TRIGGER_FORM_TABLE_KIND_CHAT", 2))
                     {
                         ImGui.TableSetupColumn("###TRIGGER_FORM_TABLE_KIND_CHAT_COL1", (ImGuiTableColumnFlags)8, (float)this.COLUMN0_WIDTH);
                         ImGui.TableSetupColumn("###TRIGGER_FORM_TABLE_KIND_CHAT_COL2", (ImGuiTableColumnFlags)4);
@@ -709,7 +709,7 @@ public class PluginUI : Window, IDisposable
                     {
                         ImGui.TableSetupColumn("###TRIGGER_FORM_TABLE_KIND_SPELL_COL1", (ImGuiTableColumnFlags)8, (float)this.COLUMN0_WIDTH);
                         ImGui.TableSetupColumn("###TRIGGER_FORM_TABLE_KIND_SPELL_COL2", (ImGuiTableColumnFlags)4);
-                        if (this.SelectedTrigger.Kind == 1)
+                        if (this.SelectedTrigger.Kind == KIND.Spell)
                         {
                             ImGui.TableNextColumn();
                             ImGui.Text("Type:");
@@ -745,16 +745,16 @@ public class PluginUI : Window, IDisposable
                             ImGuiComponents.HelpMarker("Warning: Hitting no target will result to self as if you cast on yourself");
                             ImGui.TableNextRow();
                         }
-                        if (this.SelectedTrigger.ActionEffectType == 3 || this.SelectedTrigger.ActionEffectType == 4 || this.SelectedTrigger.Kind == 2 || this.SelectedTrigger.Kind == 3)
+                        if (this.SelectedTrigger.ActionEffectType == 3 || this.SelectedTrigger.ActionEffectType == 4 || this.SelectedTrigger.Kind == KIND.HPChange || this.SelectedTrigger.Kind == KIND.HPChangeOther)
                         {
                             string str = "";
                             if (this.SelectedTrigger.ActionEffectType == 3)
                                 str = "damage";
                             if (this.SelectedTrigger.ActionEffectType == 4)
                                 str = "heal";
-                            if (this.SelectedTrigger.Kind == 2)
+                            if (this.SelectedTrigger.Kind == KIND.HPChange)
                                 str = "health";
-                            if (this.SelectedTrigger.Kind == 3)
+                            if (this.SelectedTrigger.Kind == KIND.HPChangeOther)
                                 str = "health";
                             ImGui.TableNextColumn();
                             ImGui.Text("Amount in percentage?");

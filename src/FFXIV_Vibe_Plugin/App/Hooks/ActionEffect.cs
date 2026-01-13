@@ -1,26 +1,27 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
-using FFXIV_Vibe_Plugin.App;
 using FFXIV_Vibe_Plugin.Commons;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Lumina.Excel;
-using Lumina.Text.ReadOnly;
+using NoireLib;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 
 namespace FFXIV_Vibe_Plugin.Hooks;
 
 internal class ActionEffect
 {
     private readonly ExcelSheet<Lumina.Excel.Sheets.Action>? LuminaActionSheet;
-    private Hook<HOOK_ReceiveActionEffectDelegate> receiveActionEffectHook;
+    private Hook<ActionEffectHandler.Delegates.Receive> receiveActionEffectHook;
 
     public event EventHandler<HookActionEffects_ReceivedEventArgs>? ReceivedEvent;
 
     public ActionEffect()
     {
         InitHook();
-        LuminaActionSheet = Service.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>();
+        LuminaActionSheet = NoireService.DataManager.GetExcelSheet<Lumina.Excel.Sheets.Action>();
     }
 
     public void Dispose()
@@ -29,15 +30,16 @@ internal class ActionEffect
         receiveActionEffectHook?.Dispose();
     }
 
-    private void InitHook()
+    private unsafe void InitHook()
     {
-        Service.Framework.RunOnFrameworkThread(() =>
+        NoireService.Framework.RunOnFrameworkThread(() =>
         {
             try
             {
-                // Found on: https://github.com/perchbirdd/DamageInfoPlugin/blob/main/DamageInfoPlugin/DamageInfoPlugin.cs#L126
-                var receiveActionEffectFuncPtr = Service.Scanner.ScanText("40 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24");
-                receiveActionEffectHook = Service.InteropProvider.HookFromAddress<HOOK_ReceiveActionEffectDelegate>(receiveActionEffectFuncPtr, ReceiveActionEffect);
+                receiveActionEffectHook = NoireService.GameInteropProvider.HookFromAddress<ActionEffectHandler.Delegates.Receive>(
+                    ActionEffectHandler.MemberFunctionPointers.Receive,
+                    ReceiveActionEffect
+                );
                 receiveActionEffectHook.Enable();
             }
             catch (Exception ex)
@@ -51,37 +53,35 @@ internal class ActionEffect
         });
     }
 
-    private void ReceiveActionEffect(int sourceId, IntPtr sourceCharacter, IntPtr pos, IntPtr effectHeader, IntPtr effectArray, IntPtr effectTrail)
+    private unsafe void ReceiveActionEffect(uint casterEntityId, Character* casterPtr, Vector3* targetPos, ActionEffectHandler.Header* header, ActionEffectHandler.TargetEffects* effects, GameObjectId* targetEntityIds)
     {
         Structures.Spell spell = new Structures.Spell();
 
         try
         {
-            string nameFromSourceId = GetCharacterNameFromSourceId(sourceId);
+            string nameFromSourceId = GetCharacterNameFromSourceId(casterEntityId);
 
             unsafe
             {
-                uint actionId = *(uint*)((IntPtr)effectHeader.ToPointer() + new IntPtr(2) * 4);
-                int num1 = *(ushort*)((IntPtr)effectHeader.ToPointer() + new IntPtr(14) * 2);
-                int num2 = *(ushort*)((IntPtr)effectHeader.ToPointer() - new IntPtr(7) * 2);
-                byte count = *(byte*)(effectHeader + new IntPtr(33));
+                uint actionId = header->ActionId;
+                byte count = header->NumTargets;
 
-                Structures.EffectEntry effectEntry = *(Structures.EffectEntry*)effectArray;
+                var effectEntry = effects->Effects[0]; // ??
 
                 string spellName = GetSpellName(actionId, true);
-                int[] amounts = GetAmounts(count, effectArray);
+                int[] amounts = GetAmounts(count, effects);
                 float averageAmount = ComputeAverageAmount(amounts);
 
-                List<Structures.Player> allTarget = GetAllTarget(count, effectTrail, amounts);
+                List<Structures.Player> allTarget = GetAllTarget(count, targetEntityIds, amounts);
 
-                spell.Id = (int)actionId;
+                spell.Id = actionId;
                 spell.Name = spellName;
-                spell.Player = new Structures.Player(sourceId, nameFromSourceId);
+                spell.Player = new Structures.Player(casterEntityId, nameFromSourceId);
                 spell.Amounts = amounts;
                 spell.AmountAverage = averageAmount;
                 spell.Targets = allTarget;
                 spell.DamageType = Structures.DamageType.Unknown;
-                spell.ActionEffectType = allTarget.Count != 0 ? effectEntry.type : Structures.ActionEffectType.Any;
+                spell.ActionEffectType = allTarget.Count != 0 ? (Structures.ActionEffectType)effectEntry.Type : Structures.ActionEffectType.Any;
 
                 DispatchReceivedEvent(spell);
             }
@@ -91,24 +91,24 @@ internal class ActionEffect
             Logger.Log(ex.Message + " " + ex.StackTrace);
         }
 
-        RestoreOriginalHook(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
+        RestoreOriginalHook(casterEntityId, casterPtr, targetPos, header, effects, targetEntityIds);
     }
 
-    private void RestoreOriginalHook(
-      int sourceId,
-      IntPtr sourceCharacter,
-      IntPtr pos,
-      IntPtr effectHeader,
-      IntPtr effectArray,
-      IntPtr effectTrail)
+    private unsafe void RestoreOriginalHook(
+      uint casterEntityId,
+      Character* casterPtr,
+      Vector3* targetPos,
+      ActionEffectHandler.Header* header,
+      ActionEffectHandler.TargetEffects* effects,
+      GameObjectId* targetEntityIds)
     {
         if (receiveActionEffectHook == null)
             return;
 
-        receiveActionEffectHook.Original(sourceId, sourceCharacter, pos, effectHeader, effectArray, effectTrail);
+        receiveActionEffectHook.Original(casterEntityId, casterPtr, targetPos, header, effects, targetEntityIds);
     }
 
-    private unsafe int[] GetAmounts(byte count, IntPtr effectArray)
+    private unsafe int[] GetAmounts(byte count, ActionEffectHandler.TargetEffects* effectArray)
     {
         int[] amounts = new int[count];
 
@@ -129,10 +129,10 @@ internal class ActionEffect
         else if (num1 <= 32)
             capacity = 256;
 
-        List<Structures.EffectEntry> effectEntryList = new List<Structures.EffectEntry>(capacity);
+        List<ActionEffectHandler.Effect> effectEntryList = new List<ActionEffectHandler.Effect>(capacity);
 
         for (int index = 0; index < capacity; ++index)
-            effectEntryList.Add(*(Structures.EffectEntry*)(effectArray + (index * 8)));
+            effectEntryList.Add(*(ActionEffectHandler.Effect*)(effectArray + (index * 8)));
 
         int index1 = 0;
 
@@ -140,10 +140,10 @@ internal class ActionEffect
         {
             if (index2 % 8 == 0)
             {
-                uint num2 = effectEntryList[index2].value;
+                uint num2 = effectEntryList[index2].Value;
 
-                if (effectEntryList[index2].mult != 0)
-                    num2 += 65536U * effectEntryList[index2].mult;
+                if (effectEntryList[index2].Param3 != 0)
+                    num2 += 65536U * effectEntryList[index2].Param3;
 
                 if (index1 < count)
                     amounts[index1] = (int)num2;
@@ -165,7 +165,7 @@ internal class ActionEffect
         return num != 0 ? num / amounts.Length : num;
     }
 
-    private unsafe List<Structures.Player> GetAllTarget(byte count,IntPtr effectTrail,int[] amounts)
+    private unsafe List<Structures.Player> GetAllTarget(byte count, GameObjectId* targetEntityIds, int[] amounts)
     {
         List<Structures.Player> allTarget = new List<Structures.Player>();
 
@@ -175,15 +175,15 @@ internal class ActionEffect
 
             for (int index = 0; index < count; ++index)
             {
-                numArray[index] = (ulong)*(long*)(effectTrail + (index * 8));
+                numArray[index] = (ulong)*(long*)(targetEntityIds + (index * 8));
 
-                int sourceId = (int)numArray[index];
+                uint sourceId = (uint)numArray[index];
                 string nameFromSourceId = GetCharacterNameFromSourceId(sourceId);
 
                 Structures.Player player = new Structures.Player();
                 ref Structures.Player local = ref player;
 
-                int id = sourceId;
+                uint id = sourceId;
                 string name = nameFromSourceId;
 
                 local = new Structures.Player(id, name, $"{amounts[index]}");
@@ -223,9 +223,9 @@ internal class ActionEffect
         }
     }
 
-    private string GetCharacterNameFromSourceId(int sourceId)
+    private string GetCharacterNameFromSourceId(uint sourceId)
     {
-        IGameObject gameObject = Service.GameObjects!.SearchById((uint)sourceId);
+        IGameObject gameObject = NoireService.ObjectTable!.SearchById(sourceId);
 
         string nameFromSourceId = "";
 

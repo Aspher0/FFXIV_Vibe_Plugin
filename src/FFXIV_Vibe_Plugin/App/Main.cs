@@ -8,6 +8,7 @@ using FFXIV_Vibe_Plugin.Experimental;
 using FFXIV_Vibe_Plugin.Hooks;
 using FFXIV_Vibe_Plugin.Migrations;
 using FFXIV_Vibe_Plugin.Triggers;
+using NoireLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +38,7 @@ public class Main
         CommandName = commandName;
         ShortName = shortName;
 
-        Service.DalamudChat.ChatMessage += new IChatGui.OnMessageDelegate(ChatWasTriggered);
+        NoireService.ChatGui.ChatMessage += new IChatGui.OnMessageDelegate(ChatWasTriggered);
 
         Migration migration = new Migration();
 
@@ -57,7 +58,7 @@ public class Main
 
         hook_ActionEffect.ReceivedEvent += new EventHandler<HookActionEffects_ReceivedEventArgs>(SpellWasTriggered);
 
-        Service.ClientState.Login += new Action(ClientState_LoginEvent);
+        NoireService.ClientState.Login += new Action(ClientState_LoginEvent);
 
         PlayerStats = new PlayerStats();
 
@@ -73,8 +74,8 @@ public class Main
 
         SetProfile(Service.Configuration.CurrentProfileName);
 
-        if (Service.PartyList != null)
-            new Thread(() => MonitorPartyList(Service.PartyList)).Start();
+        if (NoireService.PartyList != null)
+            new Thread(() => MonitorPartyList(NoireService.PartyList)).Start();
         else
             Logger.Error("PAS DE SERVICE");
 
@@ -100,7 +101,7 @@ public class Main
             }
         }
 
-        Service.DalamudChat.ChatMessage -= new IChatGui.OnMessageDelegate(ChatWasTriggered);
+        NoireService.ChatGui.ChatMessage -= new IChatGui.OnMessageDelegate(ChatWasTriggered);
 
         hook_ActionEffect.Dispose();
         PluginUi.Dispose();
@@ -158,7 +159,7 @@ public class Main
         if (PluginUi == null)
             return;
 
-        if (Service.ClientState.IsLoggedIn)
+        if (NoireService.ClientState.IsLoggedIn)
             PlayerStats.Update();
 
         if (_firstUpdated)
@@ -210,7 +211,8 @@ public class Main
         {
             intensity = int.Parse(args.Split(" ", 2)[1]);
             Logger.Chat($"Command Send intensity {intensity}");
-        } catch (Exception ex) when (ex is FormatException || ex is IndexOutOfRangeException)
+        }
+        catch (Exception ex) when (ex is FormatException || ex is IndexOutOfRangeException)
         {
             Logger.Error("Malformed arguments for send [intensity].", ex);
             return;
@@ -239,7 +241,7 @@ public class Main
                 DeviceController.SendTrigger(trigger);
         }
     }
-        
+
     private void ChatWasTriggered(XivChatType chatType, int timestamp, ref SeString _sender, ref SeString _message, ref bool isHandled)
     {
         string ChatFromPlayerName = _sender.ToString();
@@ -326,7 +328,7 @@ public class Main
         List<string> list = (args.Split(" ")).ToList();
 
         if (list.Count == 2)
-                SetProfile(list[1]);
+            SetProfile(list[1]);
         else
             Logger.Error("Wrong command: /fvp profile [name]");
     }

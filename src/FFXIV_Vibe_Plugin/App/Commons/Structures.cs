@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
 
 namespace FFXIV_Vibe_Plugin.Commons;
 
 public class Structures
 {
-    public enum ActionEffectType : byte
+    public enum ActionEffectType : int
     {
         Any = 0,
         Miss = 1,
@@ -47,51 +46,51 @@ public class Structures
         LimitBreak = 8,
     }
 
-    public struct EffectEntry
-    {
-        public Structures.ActionEffectType type;
-        public byte param0;
-        public byte param1;
-        public byte param2;
-        public byte mult;
-        public byte flags;
-        public ushort value;
+    //public struct EffectEntry
+    //{
+    //    public Structures.ActionEffectType type;
+    //    public byte param0;
+    //    public byte param1;
+    //    public byte param2;
+    //    public byte mult;
+    //    public byte flags;
+    //    public ushort value;
 
-        public EffectEntry(
-          Structures.ActionEffectType type,
-          byte param0,
-          byte param1,
-          byte param2,
-          byte mult,
-          byte flags,
-          ushort value)
-        {
-            this.type = Structures.ActionEffectType.Any;
-            this.param0 = 0;
-            this.param1 = 0;
-            this.param2 = 0;
-            this.mult = 0;
-            this.flags = 0;
-            this.value = 0;
-            this.type = type;
-            this.param0 = param0;
-            this.param1 = param1;
-            this.param2 = param2;
-            this.mult = mult;
-            this.flags = flags;
-            this.value = value;
-        }
+    //    public EffectEntry(
+    //      Structures.ActionEffectType type,
+    //      byte param0,
+    //      byte param1,
+    //      byte param2,
+    //      byte mult,
+    //      byte flags,
+    //      ushort value)
+    //    {
+    //        this.type = Structures.ActionEffectType.Any;
+    //        this.param0 = 0;
+    //        this.param1 = 0;
+    //        this.param2 = 0;
+    //        this.mult = 0;
+    //        this.flags = 0;
+    //        this.value = 0;
+    //        this.type = type;
+    //        this.param0 = param0;
+    //        this.param1 = param1;
+    //        this.param2 = param2;
+    //        this.mult = mult;
+    //        this.flags = flags;
+    //        this.value = value;
+    //    }
 
-        public override string ToString() => $"type: {type}, p0: {param0}, p1: {param1}, p2: {param2}, mult: {mult}, flags: {flags} | {Convert.ToString(flags, 2)}, value: {value}";
-    }
+    //    public override string ToString() => $"type: {type}, p0: {param0}, p1: {param1}, p2: {param2}, mult: {mult}, flags: {flags} | {Convert.ToString(flags, 2)}, value: {value}";
+    //}
 
     public struct Player
     {
-        public int Id;
+        public uint Id;
         public string Name;
         public string? Info;
 
-        public Player(int id, string name, string? info = null)
+        public Player(uint id, string name, string? info = null)
         {
             Id = id;
             Name = name;
@@ -109,7 +108,7 @@ public class Structures
 
     public struct Spell
     {
-        public int Id;
+        public uint Id;
         public string Name;
         public Player Player;
         public int[]? Amounts;
@@ -119,7 +118,7 @@ public class Structures
         public ActionEffectType ActionEffectType;
 
         public Spell(
-          int id,
+          uint id,
           string name,
           Player player,
           int[]? amounts,

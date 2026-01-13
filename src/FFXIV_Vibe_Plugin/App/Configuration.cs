@@ -1,5 +1,6 @@
 using Dalamud.Configuration;
 using FFXIV_Vibe_Plugin.Triggers;
+using NoireLib;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -41,7 +42,7 @@ public class Configuration : IPluginConfiguration
 
     public void Save()
     {
-        Service.PluginInterface.SavePluginConfig(this);
+        NoireService.PluginInterface.SavePluginConfig(this);
     }
 
     public ConfigurationProfile? GetProfile(string name = "")

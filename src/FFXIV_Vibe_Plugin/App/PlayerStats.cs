@@ -1,67 +1,35 @@
 using FFXIV_Vibe_Plugin.App;
-using FFXIV_Vibe_Plugin.Commons;
 using System;
 
 namespace FFXIV_Vibe_Plugin;
 
 public class PlayerStats
 {
-    private float _CurrentHp;
+    private float _CurrentHp => Service.ConnectedPlayerObject?.CurrentHp ?? -1f;
+    private float _MaxHp => Service.ConnectedPlayerObject?.MaxHp ?? -1f;
+
     private float _prevCurrentHp = -1f;
-    private float _MaxHp;
     private float _prevMaxHp = -1f;
-    public string PlayerName = "*unknown*";
+    public string PlayerName => Service.ConnectedPlayerObject?.Name.TextValue ?? "*unknown*";
 
     public event EventHandler? Event_CurrentHpChanged;
 
     public event EventHandler? Event_MaxHpChanged;
 
-    public PlayerStats()
-    {
-        UpdatePlayerState();
-    }
 
     public void Update()
     {
-        if (Service.ConnectedPlayerObject != null)
+        if (Service.ConnectedPlayerObject == null)
             return;
 
-        UpdatePlayerState();
-        UpdatePlayerName();
         UpdateCurrentHp();
     }
 
-    public void UpdatePlayerState()
-    {
-        if (Service.ConnectedPlayerObject != null || _CurrentHp != -1.0 && _MaxHp != -1.0)
-            return;
-
-        Logger.Debug($"UpdatePlayerState {_CurrentHp} {_MaxHp}");
-
-        _CurrentHp = _prevCurrentHp = Service.ConnectedPlayerObject!.CurrentHp;
-        _MaxHp = _prevMaxHp = Service.ConnectedPlayerObject!.MaxHp;
-
-        Logger.Debug($"UpdatePlayerState {_CurrentHp} {_MaxHp}");
-    }
-
-    public string UpdatePlayerName()
-    {
-        if (Service.ConnectedPlayerObject != null)
-            PlayerName = Service.ConnectedPlayerObject.Name.TextValue;
-
-        return PlayerName;
-    }
 
     public string GetPlayerName() => PlayerName;
 
     private void UpdateCurrentHp()
     {
-        if (Service.ConnectedPlayerObject != null)
-        {
-            _CurrentHp = Service.ConnectedPlayerObject.CurrentHp;
-            _MaxHp = Service.ConnectedPlayerObject.MaxHp;
-        }
-
         if (_CurrentHp != _prevCurrentHp)
         {
             EventHandler currentHpChanged = Event_CurrentHpChanged;

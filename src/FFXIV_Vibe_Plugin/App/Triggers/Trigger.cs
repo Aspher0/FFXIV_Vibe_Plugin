@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace FFXIV_Vibe_Plugin.Triggers;
 
@@ -15,7 +13,7 @@ public class Trigger : IComparable<Trigger>, IEquatable<Trigger>
     public readonly string Id = "";
     public string Name = "";
     public string Description = "";
-    public int Kind;
+    public KIND Kind;
     public int ActionEffectType;
     public int Direction;
     public string ChatText = "hello world";
@@ -33,8 +31,9 @@ public class Trigger : IComparable<Trigger>, IEquatable<Trigger>
     public Trigger(string name)
     {
         Name = name;
-        byte[] bytes = Encoding.UTF8.GetBytes(name);
-        Id = BitConverter.ToString(SHA256.Create().ComputeHash(bytes)).Replace("-", string.Empty);
+        var randomInt8Digits = new byte[8];
+        RandomNumberGenerator.Fill(randomInt8Digits);
+        Id = BitConverter.ToString(SHA256.Create().ComputeHash(randomInt8Digits)).Replace("-", string.Empty);
     }
 
     public override string ToString() => $"Trigger(name={Name}, id={GetShortID()})";
@@ -43,7 +42,7 @@ public class Trigger : IComparable<Trigger>, IEquatable<Trigger>
 
     public bool Equals(Trigger? other) => other != null && Name.Equals(other.Name);
 
-    public string GetShortID() => Id.Substring(0, 5);
+    public string GetShortID() => Id.Substring(0, 12);
 
     public void Reset()
     {

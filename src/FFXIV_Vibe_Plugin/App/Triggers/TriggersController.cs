@@ -66,9 +66,15 @@ public class TriggersController
         {
             Trigger trigger = Triggers[index];
 
-            if (trigger.Enabled && Helpers.RegExpMatch(spell.Player.Name, trigger.FromPlayerName) && trigger.Kind == 1 &&
-                Helpers.RegExpMatch(text, trigger.SpellText) && (trigger.ActionEffectType == 0 || (Structures.ActionEffectType)trigger.ActionEffectType == spell.ActionEffectType) &&
-                (trigger.ActionEffectType != 3 && trigger.ActionEffectType != 4 || trigger.AmountMinValue < spell.AmountAverage && trigger.AmountMaxValue > spell.AmountAverage))
+            if (trigger.Enabled && // Is enabled
+                Helpers.RegExpMatch(spell.Player.Name, trigger.FromPlayerName) && // From player name matches
+                trigger.Kind == KIND.Spell && // Is spell kind
+                Helpers.RegExpMatch(text, trigger.SpellText) && // Spell name matches
+                (trigger.ActionEffectType == (int)Structures.ActionEffectType.Any || (Structures.ActionEffectType)trigger.ActionEffectType == spell.ActionEffectType) && // Action effect type matches
+                (
+                    (trigger.ActionEffectType != (int)Structures.ActionEffectType.Damage && trigger.ActionEffectType != (int)Structures.ActionEffectType.Heal) ||
+                    (trigger.AmountMinValue < spell.AmountAverage && trigger.AmountMaxValue > spell.AmountAverage))
+                )
             {
                 DIRECTION spellDirection = GetSpellDirection(spell);
 
@@ -93,7 +99,7 @@ public class TriggersController
         {
             Trigger trigger = Triggers[index];
 
-            if (trigger.Enabled && trigger.Kind == 2)
+            if (trigger.Enabled && trigger.Kind == KIND.HPChange)
             {
                 if (trigger.AmountInPercentage)
                 {
@@ -125,7 +131,7 @@ public class TriggersController
         {
             Trigger trigger = Triggers[index1];
 
-            if (trigger.Enabled && trigger.Kind == 3)
+            if (trigger.Enabled && trigger.Kind == KIND.HPChangeOther)
             {
                 int length = partyList.Length;
 
