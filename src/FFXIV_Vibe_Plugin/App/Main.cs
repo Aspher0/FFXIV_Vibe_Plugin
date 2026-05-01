@@ -1,10 +1,10 @@
+using Dalamud.Game.Chat;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
 using FFXIV_Vibe_Plugin.App;
 using FFXIV_Vibe_Plugin.Commons;
 using FFXIV_Vibe_Plugin.Device;
-using FFXIV_Vibe_Plugin.Experimental;
 using FFXIV_Vibe_Plugin.Hooks;
 using FFXIV_Vibe_Plugin.Migrations;
 using FFXIV_Vibe_Plugin.Triggers;
@@ -31,14 +31,13 @@ public class Main
     private readonly DevicesController DeviceController;
     private readonly TriggersController TriggersController;
     private readonly Patterns Patterns;
-    private readonly NetworkCapture experiment_networkCapture;
 
     public Main(string commandName, string shortName)
     {
         CommandName = commandName;
         ShortName = shortName;
 
-        NoireService.ChatGui.ChatMessage += new IChatGui.OnMessageDelegate(ChatWasTriggered);
+        NoireService.ChatGui.ChatMessage += ChatWasTriggered;
 
         Migration migration = new Migration();
 
@@ -70,8 +69,6 @@ public class Main
 
         PluginUi = new PluginUI(ConfigurationProfile, DeviceController, TriggersController, Patterns);
 
-        experiment_networkCapture = new NetworkCapture();
-
         SetProfile(Service.Configuration.CurrentProfileName);
 
         if (NoireService.PartyList != null)
@@ -101,11 +98,10 @@ public class Main
             }
         }
 
-        NoireService.ChatGui.ChatMessage -= new IChatGui.OnMessageDelegate(ChatWasTriggered);
+        NoireService.ChatGui.ChatMessage -= ChatWasTriggered;
 
         hook_ActionEffect.Dispose();
         PluginUi.Dispose();
-        experiment_networkCapture.Dispose();
 
         Logger.Debug("Plugin disposed!");
 
@@ -132,10 +128,6 @@ public class Main
             DeviceController.SendVibeToAll(0);
         else if (args.StartsWith("profile"))
             Command_ProfileSet(args);
-        else if (args.StartsWith("exp_network_start"))
-            experiment_networkCapture.StartNetworkCapture();
-        else if (args.StartsWith("exp_network_stop"))
-            experiment_networkCapture.StopNetworkCapture();
         else
             Logger.Chat("Unknown subcommand: " + args);
     }
@@ -251,18 +243,19 @@ public class Main
         }
     }
 
-    private void ChatWasTriggered(XivChatType chatType, int timestamp, ref SeString _sender, ref SeString _message, ref bool isHandled)
+    //private void ChatWasTriggered(XivChatType chatType, int timestamp, ref SeString _sender, ref SeString _message, ref bool isHandled)
+    private void ChatWasTriggered(IHandleableChatMessage message)
     {
-        string ChatFromPlayerName = _sender.ToString();
+        string ChatFromPlayerName = message.Sender.ToString();
 
         if (TriggersController == null)
             Logger.Warn("ChatWasTriggered: TriggersController not init yet, ignoring chat...");
         else
         {
             if (ConfigurationProfile != null && ConfigurationProfile.VERBOSE_CHAT)
-                Logger.Debug($"VERBOSE_CHAT: {ChatFromPlayerName} type={chatType.ToString()}: {_message}");
+                Logger.Debug($"VERBOSE_CHAT: {ChatFromPlayerName} type={message.LogKind.ToString()}: {message.Message.ToString()}");
 
-            foreach (Trigger trigger in TriggersController.CheckTrigger_Chat(chatType, ChatFromPlayerName, _message.TextValue))
+            foreach (Trigger trigger in TriggersController.CheckTrigger_Chat(message.LogKind, ChatFromPlayerName, message.Message.ToString()))
                 DeviceController.SendTrigger(trigger);
         }
     }
