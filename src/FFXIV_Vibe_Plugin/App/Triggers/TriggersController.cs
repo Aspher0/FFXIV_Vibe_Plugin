@@ -70,9 +70,9 @@ public class TriggersController
                 Helpers.RegExpMatch(spell.Player.Name, trigger.FromPlayerName) && // From player name matches
                 trigger.Kind == KIND.Spell && // Is spell kind
                 Helpers.RegExpMatch(text, trigger.SpellText) && // Spell name matches
-                (trigger.ActionEffectType == (int)Structures.ActionEffectType.Any || (Structures.ActionEffectType)trigger.ActionEffectType == spell.ActionEffectType) && // Action effect type matches
+                (trigger.ActionEffectType == (int)Structures.ActionEffectKind.Any || (Structures.ActionEffectKind)trigger.ActionEffectType == spell.ActionEffectType) && // Action effect type matches
                 (
-                    (trigger.ActionEffectType != (int)Structures.ActionEffectType.Damage && trigger.ActionEffectType != (int)Structures.ActionEffectType.Heal) ||
+                    (trigger.ActionEffectType != (int)Structures.ActionEffectKind.Damage && trigger.ActionEffectType != (int)Structures.ActionEffectKind.Heal) ||
                     (trigger.AmountMinValue < spell.AmountAverage && trigger.AmountMaxValue > spell.AmountAverage))
                 )
             {

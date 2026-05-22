@@ -98,37 +98,42 @@ public class PluginUI : Window, IDisposable
         ImGui.Spacing();
         UIBanner.Draw(frameCounter, this.DonationLink, this.KofiLink, this.DevicesController);
         ImGui.Columns(1);
-        if (!ImGui.BeginTabBar("##ConfigTabBar", (ImGuiTabBarFlags)0))
-            return;
-        if (ImGui.BeginTabItem("Connect"))
+
+        if (ImGui.BeginTabBar("##ConfigTabBar", (ImGuiTabBarFlags)0))
         {
-            UIConnect.Draw(ConfigurationProfile, DevicesController);
-            ImGui.EndTabItem();
+            if (ImGui.BeginTabItem("Connect"))
+            {
+                UIConnect.Draw(ConfigurationProfile, DevicesController);
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Options"))
+            {
+                this.DrawOptionsTab();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Devices"))
+            {
+                this.DrawDevicesTab();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Triggers"))
+            {
+                this.DrawTriggersTab();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Patterns"))
+            {
+                this.DrawPatternsTab();
+                ImGui.EndTabItem();
+            }
+            if (ImGui.BeginTabItem("Help"))
+            {
+                this.DrawHelpTab();
+                ImGui.EndTabItem();
+            }
+
+            ImGui.EndTabBar();
         }
-        if (ImGui.BeginTabItem("Options"))
-        {
-            this.DrawOptionsTab();
-            ImGui.EndTabItem();
-        }
-        if (ImGui.BeginTabItem("Devices"))
-        {
-            this.DrawDevicesTab();
-            ImGui.EndTabItem();
-        }
-        if (ImGui.BeginTabItem("Triggers"))
-        {
-            this.DrawTriggersTab();
-            ImGui.EndTabItem();
-        }
-        if (ImGui.BeginTabItem("Patterns"))
-        {
-            this.DrawPatternsTab();
-            ImGui.EndTabItem();
-        }
-        if (!ImGui.BeginTabItem("Help"))
-            return;
-        this.DrawHelpTab();
-        ImGui.EndTabItem();
     }
 
     public void DrawOptionsTab()
@@ -714,7 +719,7 @@ public class PluginUI : Window, IDisposable
                             ImGui.TableNextColumn();
                             ImGui.Text("Type:");
                             ImGui.TableNextColumn();
-                            string[] names1 = Enum.GetNames(typeof(Structures.ActionEffectType));
+                            string[] names1 = Enum.GetNames(typeof(Structures.ActionEffectKind));
                             int actionEffectType = this.SelectedTrigger.ActionEffectType;
                             if (ImGui.Combo("###TRIGGER_FORM_EVENT", ref actionEffectType, names1, names1.Length))
                             {

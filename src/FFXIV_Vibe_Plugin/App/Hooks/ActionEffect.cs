@@ -79,7 +79,7 @@ internal class ActionEffect
             spell.AmountAverage = averageAmount;
             spell.Targets = allTarget;
             spell.DamageType = Structures.DamageType.Unknown;
-            spell.ActionEffectType = allTarget.Count != 0 ? (Structures.ActionEffectType)effectEntry.Type : Structures.ActionEffectType.Any;
+            spell.ActionEffectType = allTarget.Count != 0 ? (Structures.ActionEffectKind)effectEntry.Type : Structures.ActionEffectKind.Any;
 
             DispatchReceivedEvent(spell);
         }
@@ -104,61 +104,6 @@ internal class ActionEffect
 
         receiveActionEffectHook.Original(casterEntityId, casterPtr, targetPos, header, effects, targetEntityIds);
     }
-
-    //private unsafe int[] GetAmounts(byte count, ActionEffectHandler.TargetEffects* effectArray)
-    //{
-    //    try
-    //    {
-    //        int[] amounts = new int[count];
-
-    //        int num1 = count;
-
-    //        int capacity = 0;
-
-    //        if (num1 == 0)
-    //            capacity = 0;
-    //        else if (num1 == 1)
-    //            capacity = 8;
-    //        else if (num1 <= 8)
-    //            capacity = 64;
-    //        else if (num1 <= 16)
-    //            capacity = 128;
-    //        else if (num1 <= 24)
-    //            capacity = 192;
-    //        else if (num1 <= 32)
-    //            capacity = 256;
-
-    //        List<ActionEffectHandler.Effect> effectEntryList = new List<ActionEffectHandler.Effect>(capacity);
-
-    //        for (int index = 0; index < capacity; ++index)
-    //            effectEntryList.Add(effectArray->Effects[index]);
-
-    //        int index1 = 0;
-
-    //        for (int index2 = 0; index2 < effectEntryList.Count; ++index2)
-    //        {
-    //            if (index2 % 8 == 0)
-    //            {
-    //                uint num2 = effectEntryList[index2].Value;
-
-    //                if (effectEntryList[index2].Param3 != 0)
-    //                    num2 += 65536U * effectEntryList[index2].Param3;
-
-    //                if (index1 < count)
-    //                    amounts[index1] = (int)num2;
-
-    //                ++index1;
-    //            }
-    //        }
-
-    //        return amounts;
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        NoireLogger.LogError(ex, $"HookActionEffect.GetAmounts");
-    //        return [];
-    //    }
-    //}
 
     private unsafe int[] GetAmounts(byte count, ActionEffectHandler.TargetEffects* effectArray)
     {

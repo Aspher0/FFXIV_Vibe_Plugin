@@ -4,7 +4,7 @@ namespace FFXIV_Vibe_Plugin.Commons;
 
 public class Structures
 {
-    public enum ActionEffectType : int
+    public enum ActionEffectKind : int
     {
         Any = 0,
         Miss = 1,
@@ -14,24 +14,58 @@ public class Structures
         BlockedDamage = 5,
         ParriedDamage = 6,
         Invulnerable = 7,
-        NoEffectText = 8,
-        Unknown_0 = 9,
-        MpLoss = 10, // 0x0A
-        MpGain = 11, // 0x0B
-        TpLoss = 12, // 0x0C
-        TpGain = 13, // 0x0D
-        GpGain = 14, // 0x0E
-        ApplyStatusEffectTarget = 15, // 0x0F
-        ApplyStatusEffectSource = 16, // 0x10
-        StatusNoEffect = 20, // 0x14
-        Taunt = 24, // 0x18
-        StartActionCombo = 27, // 0x1B
-        ComboSucceed = 28, // 0x1C
-        Knockback = 33, // 0x21
-        Mount = 40, // 0x28
-        VFX = 59, // 0x3B
-        Transport = 60, // 0x3C
-        MountJapaneseVersion = 240, // 0xF0
+        NoEffect = 8,
+        Unknown9 = 9,
+        MpLoss = 10,
+        MpGain = 11,
+        TpLoss = 12,
+        GpGain = 13,
+
+        ApplyStatusTarget = 14,
+        ApplyStatusSource = 15,
+        RecoveredStatus = 16,
+        LoseStatusTarget = 17,
+        LoseStatusSource = 18,
+        StatusNoEffect = 20,
+
+        EnminityIndex = 24,
+        EnmityAmountUp = 25,
+        Unk_EnmityAmountDown = 26,      // Unsure but makes sense with the position
+        StartActionCombo = 27,
+        ComboStep = 28,
+
+        Knockback = 31,
+        Attract = 32,
+        Attract2 = 33,
+        Dash = 34,
+        Dash2 = 35,
+        Dash3 = 36,
+
+        MountSfx = 39,
+
+        StatusDispel1 = 47,
+        StatusDispel2 = 48,
+        StatusDispel3 = 49,
+
+        InstantDeath = 50,              // Some sources mention this is Revive LB, triggers LogMessage 519
+        InstantDeath2 = 51,             // Triggers LogMessage 519
+
+        FullResistStatus = 55,          // Trigger LogMessage 596
+        Vulnerability = 57,             // Triggers LogMessage 456, "been sentenced to death!"
+
+        SxtBattleLogMessage = 60,
+        ActionChange = 61,              // Some sources say this is JobGauge, unsure.
+        Unknown62 = 62,                 // Some sources mention this is Gaining WAR Gauge
+        ToggleVis = 65,
+        SetModelScale = 68,
+        Unk_SetModelState = 73,         // Not up-to-date, might be wrong
+
+        SetHP = 74,                     // e.g. zodiark's kokytos
+        PartialInvulnerable = 75,
+        Interrupt = 76,
+
+        Unk_MountJapaneseVersion = 240, // Not up-to-date, might be wrong
+        Unknown = 255,
     }
 
     public enum DamageType
@@ -45,44 +79,6 @@ public class Structures
         Physical = 7,
         LimitBreak = 8,
     }
-
-    //public struct EffectEntry
-    //{
-    //    public Structures.ActionEffectType type;
-    //    public byte param0;
-    //    public byte param1;
-    //    public byte param2;
-    //    public byte mult;
-    //    public byte flags;
-    //    public ushort value;
-
-    //    public EffectEntry(
-    //      Structures.ActionEffectType type,
-    //      byte param0,
-    //      byte param1,
-    //      byte param2,
-    //      byte mult,
-    //      byte flags,
-    //      ushort value)
-    //    {
-    //        this.type = Structures.ActionEffectType.Any;
-    //        this.param0 = 0;
-    //        this.param1 = 0;
-    //        this.param2 = 0;
-    //        this.mult = 0;
-    //        this.flags = 0;
-    //        this.value = 0;
-    //        this.type = type;
-    //        this.param0 = param0;
-    //        this.param1 = param1;
-    //        this.param2 = param2;
-    //        this.mult = mult;
-    //        this.flags = flags;
-    //        this.value = value;
-    //    }
-
-    //    public override string ToString() => $"type: {type}, p0: {param0}, p1: {param1}, p2: {param2}, mult: {mult}, flags: {flags} | {Convert.ToString(flags, 2)}, value: {value}";
-    //}
 
     public struct Player
     {
@@ -115,7 +111,7 @@ public class Structures
         public float AmountAverage;
         public List<Player>? Targets;
         public DamageType DamageType;
-        public ActionEffectType ActionEffectType;
+        public ActionEffectKind ActionEffectType;
 
         public Spell(
           uint id,
@@ -125,11 +121,11 @@ public class Structures
           float amountAverage,
           List<Player>? targets,
           DamageType damageType,
-          ActionEffectType actionEffectType)
+          ActionEffectKind actionEffectType)
         {
             Name = "Undefined_Spell_Name";
             DamageType = DamageType.Unknown;
-            ActionEffectType = ActionEffectType.Any;
+            ActionEffectType = ActionEffectKind.Any;
             Id = id;
             Name = name;
             Player = player;
